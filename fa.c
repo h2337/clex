@@ -170,19 +170,10 @@ bool test(Node *nfa, char *target) {
   return false;
 }
 
-void drawNFA(Node *nfa) {
-  for (int i = 0; i < 100; i++)
-    if (nfa->transitions[i]) {
-      printf("%d -> %d [label=\"%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->value);
-      drawNFA(nfa->transitions[i]->to);
-    }
-}
-
 int main(int argc, char *argv[]) {
   char *re = argv[1];
   initLexer(re);
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
-  //drawNFA(nfa);
 }
