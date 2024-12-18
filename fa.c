@@ -231,8 +231,10 @@ Node *reToNFA() {
         if (beforeParanEntry) {
           beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->fromValue, beforeParanEntry->transitions[0]->toValue, pipeEntry);
           beforeParanEntry = pipeEntry;
-        } else
+        } else {
           entry = pipeEntry;
+          beforeParanEntry = entry;
+        }
         pipeEntry->transitions[0] = makeTransition('\0', '\0', paranEntry);
 
         Node *firstFinish = getFinishNode(paranEntry);
