@@ -79,47 +79,39 @@ Token *makeLexemeToken(TokenKind kind, char lexeme) {
 }
 
 Token *lex() {
-  if (lexerContent[lexerPosition] == '\0')
-    return makeToken(EOF);
-  if (lexerContent[lexerPosition] == '(') {
-    lexerPosition++;
-    return makeLexemeToken(OPARAN, '(');
-  }
-  if (lexerContent[lexerPosition] == ')') {
-    lexerPosition++;
-    return makeLexemeToken(CPARAN, ')');
-  }
-  if (lexerContent[lexerPosition] == '[') {
-    lexerPosition++;
-    return makeLexemeToken(OSBRACKET, '[');
-  }
-  if (lexerContent[lexerPosition] == ']') {
-    lexerPosition++;
-    return makeLexemeToken(CSBRACKET, ']');
-  }
-  if (lexerContent[lexerPosition] == '-') {
-    lexerPosition++;
-    return makeLexemeToken(DASH, '-');
-  }
-  if (lexerContent[lexerPosition] == '|') {
-    lexerPosition++;
-    return makeLexemeToken(PIPE, '|');
-  }
-  if (lexerContent[lexerPosition] == '*') {
-    lexerPosition++;
-    return makeLexemeToken(STAR, '*');
-  }
-  if (lexerContent[lexerPosition] == '+') {
-    lexerPosition++;
-    return makeLexemeToken(PLUS, '+');
-  }
-  if (lexerContent[lexerPosition] == '?') {
-    lexerPosition++;
-    return makeLexemeToken(QUESTION, '?');
-  }
-  if (lexerContent[lexerPosition] == '\\') {
-    lexerPosition++;
-    return makeLexemeToken(BSLASH, '\\');
+  switch (lexerContent[lexerPosition]) {
+    case '\0':
+      return makeToken(EOF);
+    case '(':
+      lexerPosition++;
+      return makeLexemeToken(OPARAN, '(');
+    case ')':
+      lexerPosition++;
+      return makeLexemeToken(CPARAN, ')');
+    case '[':
+      lexerPosition++;
+      return makeLexemeToken(OSBRACKET, '[');
+    case ']':
+      lexerPosition++;
+      return makeLexemeToken(CSBRACKET, ']');
+    case '-':
+      lexerPosition++;
+      return makeLexemeToken(DASH, '-');
+    case '|':
+      lexerPosition++;
+      return makeLexemeToken(PIPE, '|');
+    case '*':
+      lexerPosition++;
+      return makeLexemeToken(STAR, '*');
+    case '+':
+      lexerPosition++;
+      return makeLexemeToken(PLUS, '+');
+    case '?':
+      lexerPosition++;
+      return makeLexemeToken(QUESTION, '?');
+    case '\\':
+      lexerPosition++;
+      return makeLexemeToken(BSLASH, '\\');
   }
   Token *result = makeLexemeToken(LITERAL, lexerContent[lexerPosition]);
   lexerPosition++;
