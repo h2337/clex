@@ -17,8 +17,7 @@ typedef struct Node {
   Transition **transitions;
 } Node;
 
-void initLexer(char *content);
-Node *reToNFA();
+Node *reToNFA(char *re);
 bool test(Node *nfa, char *target);
 void drawNFA(Node *nfa);
 

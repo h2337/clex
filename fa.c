@@ -179,7 +179,9 @@ Node *getFinishNode(Node *node) {
   return NULL;
 }
 
-Node *reToNFA() {
+Node *reToNFA(char *re) {
+  if (re)
+    initLexer(re);
   Token *token;
   Node *entry = makeNode(true, true);
   Node *last = entry;
@@ -216,7 +218,7 @@ Node *reToNFA() {
         Node *firstFinish = getFinishNode(pastEntry);
         firstFinish->isFinish = false;
 
-        Node *second = reToNFA();
+        Node *second = reToNFA(NULL);
         Node *secondFinish = getFinishNode(second);
         secondFinish->isFinish = false;
         entry->transitions[1] = makeTransition('\0', '\0', second);
@@ -240,7 +242,7 @@ Node *reToNFA() {
         Node *firstFinish = getFinishNode(paranEntry);
         firstFinish->isFinish = false;
 
-        Node *second = reToNFA();
+        Node *second = reToNFA(NULL);
         Node *secondFinish = getFinishNode(second);
         secondFinish->isFinish = false;
         pipeEntry->transitions[1] = makeTransition('\0', '\0', second);
