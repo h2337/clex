@@ -148,6 +148,8 @@ bool test(Node *nfa, char *target) {
       }
     return false;
   }
+  if (nfa->transitions[0] && nfa->transitions[0]->value == '\0' && nfa->transitions[0]->to->isFinish)
+    return true;
   if (nfa->isFinish)
     return true;
   return false;
@@ -167,5 +169,5 @@ int main(int argc, char *argv[]) {
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
-  //drawNFA(nfa);
+  drawNFA(nfa);
 }
