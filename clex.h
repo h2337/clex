@@ -6,8 +6,8 @@ typedef struct Token {
   char *lexeme;
 } Token;
 
-void initClex(char *content);
-void registerKind(char *re, int kind);
+void initClex(const char *content);
+void registerKind(const char *re, int kind);
 void deleteKinds(void);
 Token clex(void);
 

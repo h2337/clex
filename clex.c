@@ -5,21 +5,21 @@
 #include <string.h>
 
 typedef struct Rule {
-  char *re;
+  const char *re;
   Node *nfa;
   int kind;
 } Rule;
 
 static Rule **rules;
-static char *clexContent;
+static const char *clexContent;
 static size_t clexPosition;
 
-void initClex(char *content) {
+void initClex(const char *content) {
   clexContent = content;
   clexPosition = 0;
 }
 
-void registerKind(char *re, int kind) {
+void registerKind(const char *re, int kind) {
   if (!rules)
     rules = calloc(1024, sizeof(Rule *));
   for (int i = 0; i < 1024; i++) {

@@ -42,7 +42,7 @@ typedef struct Token {
   char lexeme;
 } Token;
 
-static char *lexerContent;
+static const char *lexerContent;
 static size_t lexerPosition;
 static Node *lastBeforeParanEntry = NULL;
 static Node *beforeParanEntry = NULL;
@@ -53,7 +53,7 @@ static bool inBackslash = false;
 static char **drawSeen = NULL;
 static char **getFinishNodeSeen = NULL;
 
-void initLexer(char *content) {
+void initLexer(const char *content) {
   lexerContent = content;
   lexerPosition = 0;
   lastBeforeParanEntry = NULL;
@@ -187,7 +187,7 @@ Node *getFinishNode(Node *node) {
   return NULL;
 }
 
-Node *reToNFA(char *re) {
+Node *reToNFA(const char *re) {
   if (re) initLexer(re);
   Token *token;
   Node *entry = makeNode(true, true);
@@ -379,7 +379,7 @@ Node *reToNFA(char *re) {
   return entry;
 }
 
-bool test(Node *nfa, char *target) {
+bool test(Node *nfa, const char *target) {
   for (int i = 0; i < strlen(target); i++) {
     for (int j = 0; j < 100; j++)
       if (nfa->transitions[j]) {
