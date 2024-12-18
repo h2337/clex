@@ -42,7 +42,7 @@ void deleteKinds() {
 Token *clex() {
   size_t start = clexPosition;
   while (!isspace(clexContent[clexPosition++]));
-  char *part = malloc(clexPosition - start);
+  char *part = calloc(clexPosition - start, sizeof(char));
   strncpy(part, clexContent + start, clexPosition - start - 1);
 
   for (int i = 0; i < 1024; i++) {
