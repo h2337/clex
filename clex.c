@@ -53,12 +53,9 @@ clexToken clex(clexLexer *lexer) {
 
   while (strlen(part)) {
     for (int i = 0; i < CLEX_MAX_RULES; i++) {
-      if (lexer->rules[i]) {
-        bool matches = clexNfaTest(lexer->rules[i]->nfa, part);
-        if (matches) {
+      if (lexer->rules[i])
+        if (clexNfaTest(lexer->rules[i]->nfa, part))
           return (clexToken){.lexeme = part, .kind = lexer->rules[i]->kind};
-        }
-      }
     }
     part[strlen(part) - 1] = '\0';
     lexer->position--;
