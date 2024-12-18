@@ -1,8 +1,12 @@
+
+
+#define _CRT_SECURE_NO_WARNINGS
 #include "clex.h"
 #include "fa.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
 
 typedef struct Rule {
   const char *re;
@@ -59,5 +63,7 @@ Token clex() {
     if (isspace(clexContent[clexPosition]))
       clexPosition--;
   }
+  // EOF token is expected to have a kind=0 and a null string.
+  return (Token){.lexeme = NULL, .kind = 0};
 }
 
