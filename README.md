@@ -9,7 +9,7 @@
 
 clex is a simple lexer generator for C.
 
-With clex you can associate a regex pattern to each token type with `registerKind(regex, type)` call, pass the source using `initClex(source) call, and then lex the next token with `clex()` call.
+With clex you can associate a regex pattern to each token type with `registerKind(regex, type)` call, pass the source using `initClex(source)` call, and then lex the next token with `clex()` call.
 
 ## Example
 
