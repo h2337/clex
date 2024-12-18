@@ -20,23 +20,26 @@ void clexInit(const char *content) {
   clexPosition = 0;
 }
 
-void clexRegisterKind(const char *re, int kind) {
-  if (!rules)
-    rules = calloc(1024, sizeof(Rule *));
-  for (int i = 0; i < 1024; i++) {
+bool clexRegisterKind(const char *re, int kind) {
+  if (!rules) {
+    rules = calloc(CLEX_MAX_RULES, sizeof(Rule *));
+  }
+  for (int i = 0; i < CLEX_MAX_RULES; i++) {
     if (!rules[i]) {
       Rule *rule = malloc(sizeof(Rule));
       rule->re = re;
       rule->nfa = NFAFromRe(re);
+      if (!rule->nfa) return false;
       rule->kind = kind;
       rules[i] = rule;
       break;
     }
   }
+  return true;
 }
 
 void clexDeleteKinds() {
-  rules = calloc(1024, sizeof(Rule *));
+  if (rules) memset(rules, 0, CLEX_MAX_RULES);
 }
 
 Token clex() {
@@ -63,4 +66,3 @@ Token clex() {
   // EOF token is expected to have a kind=0 and a null string.
   return (Token){.lexeme = NULL, .kind = 0};
 }
-

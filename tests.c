@@ -485,5 +485,8 @@ int main(int argc, char *argv) {
   assert(NFATest(nfa, "23") == true);
   assert(NFATest(nfa, "23u") == true);
   assert(NFATest(nfa, "23UlL") == true);
+
+  nfa = NFAFromRe("[");
+  assert(nfa == 0);
 }
 #endif
