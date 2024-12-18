@@ -41,6 +41,8 @@ typedef enum TokenKind {
   DASH,
   PIPE,
   STAR,
+  PLUS,
+  QUESTION,
   LITERAL,
   EOF,
 } TokenKind;
@@ -102,6 +104,14 @@ Token *lex() {
     lexerPosition++;
     return makeToken(STAR);
   }
+  if (lexerContent[lexerPosition] == '+') {
+    lexerPosition++;
+    return makeToken(PLUS);
+  }
+  if (lexerContent[lexerPosition] == '?') {
+    lexerPosition++;
+    return makeToken(QUESTION);
+  }
   Token *result = makeLiteralToken(LITERAL, lexerContent[lexerPosition]);
   lexerPosition++;
   return result;
@@ -151,6 +161,8 @@ Node *reToNFA() {
       Node *finish = makeNode(false, true);
       firstFinish->transitions[0] = makeTransition('\0', finish);
       secondFinish->transitions[0] = makeTransition('\0', finish);
+
+      last = finish;
     }
     if (token->kind == STAR) {
       Node *pastEntry = entry;
@@ -165,6 +177,28 @@ Node *reToNFA() {
       firstFinish->isFinish = false;
       firstFinish->transitions[0] = makeTransition('\0', finish);
       firstFinish->transitions[1] = makeTransition('\0', pastEntry);
+
+      last = finish;
+    }
+    if (token->kind == PLUS) {
+      Node *finish = getFinishNode(entry);
+      finish->transitions[1] = makeTransition('\0', entry);
+    }
+    if (token->kind == QUESTION) {
+      Node *pastEntry = entry;
+      pastEntry->isStart = false;
+
+      entry = makeNode(true, false);
+
+      entry->transitions[0] = makeTransition('\0', pastEntry);
+      Node *firstFinish = getFinishNode(pastEntry);
+      firstFinish->isFinish = false;
+
+      Node *finish = makeNode(false, true);
+      firstFinish->transitions[0] = makeTransition('\0', finish);
+      entry->transitions[1] = makeTransition('\0', finish);
+
+      last = finish;
     }
     if (token->kind == OSBRACKET) {
       char *values = calloc(1000, sizeof(char));
@@ -227,5 +261,4 @@ int main(int argc, char *argv[]) {
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
-  drawNFA(nfa);
 }
