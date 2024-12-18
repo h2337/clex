@@ -501,7 +501,7 @@ int main(int argc, char *argv) {
   NFADraw(nfa);
   */
 
-  Node *nfa = NFAFromRe("a(bc|de)*f");
+  Node *nfa = NFAFromRe("[A-Z]a(bc|de)*f");
   NFADraw(nfa);
 }
 #endif
