@@ -353,7 +353,9 @@ Node *NFAFromRe(const char *re) {
     if (token->kind == OSBRACKET) {
       int index = 0;
       Node *node = makeNode(false, true);
-      while (peek()->kind != CSBRACKET) {
+      int kind;
+      while ((kind = peek()->kind) != CSBRACKET) {
+        if (kind == EOF) return NULL;
         char fromValue = lex()->lexeme;
         if (peek()->kind == DASH) {
           lex();
@@ -394,4 +396,3 @@ bool NFATest(Node *nfa, const char *target) {
     return true;
   return false;
 }
-

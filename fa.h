@@ -22,4 +22,3 @@ bool NFATest(Node *nfa, const char *target);
 void NFADraw(Node *nfa);
 
 #endif
-

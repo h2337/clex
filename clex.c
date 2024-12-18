@@ -20,7 +20,7 @@ void clexInit(const char *content) {
   clexPosition = 0;
 }
 
-void clexRegisterKind(const char *re, int kind) {
+bool clexRegisterKind(const char *re, int kind) {
   if (!rules) {
     rules = calloc(CLEX_MAX_RULES, sizeof(Rule *));
   }
@@ -29,11 +29,13 @@ void clexRegisterKind(const char *re, int kind) {
       Rule *rule = malloc(sizeof(Rule));
       rule->re = re;
       rule->nfa = NFAFromRe(re);
+      if (!rule->nfa) return false;
       rule->kind = kind;
       rules[i] = rule;
       break;
     }
   }
+  return true;
 }
 
 void clexDeleteKinds() {
