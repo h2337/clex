@@ -463,6 +463,9 @@ int main(int argc, char *argv[]) {
   assert(NFATest(nfa, "_var1") == true);
   assert(NFATest(nfa, "vv1") == true);
   assert(NFATest(nfa, "v1") == true);
+  assert(NFATest(nfa, "_") == true);
+  assert(NFATest(nfa, "_1") == true);
+  assert(NFATest(nfa, "a") == true);
 
   nfa = NFAFromRe("\\|");
   assert(NFATest(nfa, "|") == true);
