@@ -14,19 +14,19 @@ static Rule **rules;
 static const char *clexContent;
 static size_t clexPosition;
 
-void initClex(const char *content) {
+void clexInit(const char *content) {
   clexContent = content;
   clexPosition = 0;
 }
 
-void registerKind(const char *re, int kind) {
+void clexRegisterKind(const char *re, int kind) {
   if (!rules)
     rules = calloc(1024, sizeof(Rule *));
   for (int i = 0; i < 1024; i++) {
     if (!rules[i]) {
       Rule *rule = malloc(sizeof(Rule));
       rule->re = re;
-      rule->nfa = reToNFA(re);
+      rule->nfa = NFAFromRe(re);
       rule->kind = kind;
       rules[i] = rule;
       break;
@@ -34,7 +34,7 @@ void registerKind(const char *re, int kind) {
   }
 }
 
-void deleteKinds() {
+void clexDeleteKinds() {
   rules = calloc(1024, sizeof(Rule *));
 }
 
@@ -48,7 +48,7 @@ Token clex() {
   while (strlen(part)) {
     for (int i = 0; i < 1024; i++) {
       if (rules[i]) {
-        bool matches = test(rules[i]->nfa, part);
+        bool matches = NFATest(rules[i]->nfa, part);
         if (matches) {
           return (Token){.lexeme = part, .kind = rules[i]->kind};
         }
