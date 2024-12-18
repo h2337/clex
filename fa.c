@@ -120,7 +120,8 @@ Token *lex() {
 
 Token *peek() {
   Token *lexed = lex();
-  lexerPosition--;
+  if (lexed->kind != EOF)
+    lexerPosition--;
   return lexed;
 }
 
@@ -133,11 +134,24 @@ Node *getFinishNode(Node *node) {
   return NULL;
 }
 
+Node *beforeParanEntry = NULL;
+Node *paranEntry = NULL;
+
 Node *reToNFA() {
   Token *token;
   Node *entry = makeNode(true, true);
   Node *last = entry;
   while ((token = lex())->kind != EOF) {
+    if (peek()->kind == OPARAN) {
+      beforeParanEntry = last;
+    }
+    if (token->kind == OPARAN) {
+      paranEntry = last;
+    }
+    if (token->kind == CPARAN) {
+      paranEntry = NULL;
+      return entry;
+    }
     if (token->kind == LITERAL) {
       Node *node = makeNode(false, true);
       last->transitions[0] = makeTransition(token->lexeme, node);
@@ -145,25 +159,45 @@ Node *reToNFA() {
       last = node;
     }
     if (token->kind == PIPE) {
-      Node *pastEntry = entry;
-      pastEntry->isStart = false;
+      if (!paranEntry) {
+        Node *pastEntry = entry;
+        pastEntry->isStart = false;
 
-      entry = makeNode(true, false);
+        entry = makeNode(true, false);
 
-      entry->transitions[0] = makeTransition('\0', pastEntry);
-      Node *firstFinish = getFinishNode(pastEntry);
-      firstFinish->isFinish = false;
+        entry->transitions[0] = makeTransition('\0', pastEntry);
+        Node *firstFinish = getFinishNode(pastEntry);
+        firstFinish->isFinish = false;
 
-      Node *second = reToNFA();
-      Node *secondFinish = getFinishNode(second);
-      secondFinish->isFinish = false;
-      entry->transitions[1] = makeTransition('\0', second);
+        Node *second = reToNFA();
+        Node *secondFinish = getFinishNode(second);
+        secondFinish->isFinish = false;
+        entry->transitions[1] = makeTransition('\0', second);
 
-      Node *finish = makeNode(false, true);
-      firstFinish->transitions[0] = makeTransition('\0', finish);
-      secondFinish->transitions[0] = makeTransition('\0', finish);
+        Node *finish = makeNode(false, true);
+        firstFinish->transitions[0] = makeTransition('\0', finish);
+        secondFinish->transitions[0] = makeTransition('\0', finish);
 
-      last = finish;
+        last = finish;
+      } else {
+        Node *pipeEntry = makeNode(beforeParanEntry ? false : true, false);
+        beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->value, pipeEntry);
+        pipeEntry->transitions[0] = makeTransition('\0', paranEntry);
+
+        Node *firstFinish = getFinishNode(paranEntry);
+        firstFinish->isFinish = false;
+
+        Node *second = reToNFA();
+        Node *secondFinish = getFinishNode(second);
+        secondFinish->isFinish = false;
+        pipeEntry->transitions[1] = makeTransition('\0', second);
+
+        Node *finish = makeNode(false, true);
+        firstFinish->transitions[0] = makeTransition('\0', finish);
+        secondFinish->transitions[0] = makeTransition('\0', finish);
+
+        last = finish;
+      }
     }
     if (token->kind == STAR) {
       Node *pastEntry = entry;
@@ -319,6 +353,17 @@ int main(int argc, char *argv[]) {
   assert(test(nfa, "Ac") == true);
   assert(test(nfa, "Zd") == false);
   assert(test(nfa, "Zc") == true);
+
+  initLexer("a(bc|de)f");
+  nfa = reToNFA();
+  assert(test(nfa, "abcf") == true);
+  assert(test(nfa, "adef") == true);
+  assert(test(nfa, "af") == false);
+  assert(test(nfa, "abf") == false);
+  assert(test(nfa, "abcdef") == false);
+  assert(test(nfa, "abccf") == false);
+  assert(test(nfa, "bcf") == false);
+  assert(test(nfa, "abc") == false);
 #endif
 #ifndef TEST
   char *re = argv[1];
@@ -326,5 +371,6 @@ int main(int argc, char *argv[]) {
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
+  //drawNFA(nfa);
 #endif
 }
