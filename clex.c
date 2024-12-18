@@ -61,6 +61,6 @@ Token clex() {
     if (isspace(clexContent[clexPosition]))
       clexPosition--;
   }
-  // EOF token is expected to have a kind=0 and a null string.
-  return (Token){.lexeme = NULL, .kind = 0};
+  // EOF token is expected to have a kind -1 and a null string for lexeme
+  return (Token){.lexeme = NULL, .kind = -1};
 }
