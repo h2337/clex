@@ -6,7 +6,8 @@
 typedef struct Node Node;
 
 typedef struct Transition {
-  char value;
+  char fromValue;
+  char toValue;
   Node *to;
 } Transition;
 
@@ -19,5 +20,6 @@ typedef struct Node {
 void initLexer(char *content);
 Node *reToNFA();
 bool test(Node *nfa, char *target);
+void drawNFA(Node *nfa);
 
 #endif

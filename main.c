@@ -1,4 +1,24 @@
-#ifdef TEST
+#ifdef TEST_CLEX
+
+#include "clex.h"
+#include <assert.h>
+
+typedef enum TokenKind {
+  IDENTIFIER,
+  AUTO,
+  BOOL,
+  BREAK,
+} TokenKind;
+
+int main(int argc, char *argv[]) {
+  registerKind("auto", AUTO);
+  registerKind("_Bool", BOOL);
+  registerKind("break", BREAK);
+  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
+}
+#endif
+
+#ifdef TEST_REGEX
 
 #include "fa.h"
 #include <assert.h>
@@ -146,5 +166,13 @@ int main(int argc, char *argv) {
   assert(test(nfa, "abccf") == false);
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
+
+  initLexer("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
+  nfa = reToNFA();
+  assert(test(nfa, "valid") == true);
+  assert(test(nfa, "Valid") == true);
+  assert(test(nfa, "_var1") == true);
+  assert(test(nfa, "vv1") == true);
+  assert(test(nfa, "v1") == true);
 }
 #endif
