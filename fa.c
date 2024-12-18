@@ -32,6 +32,7 @@ typedef enum TokenKind {
   STAR,
   PLUS,
   QUESTION,
+  BSLASH,
   LITERAL,
   EOF,
 } TokenKind;
@@ -47,6 +48,7 @@ Node *beforeParanEntry = NULL;
 Node *paranEntry = NULL;
 bool inPipe = false;
 bool pipeSeen = false;
+bool inBackslash = false;
 char **drawSeen = NULL;
 char **getFinishNodeSeen = NULL;
 
@@ -67,10 +69,10 @@ Token *makeToken(TokenKind kind) {
   return result;
 }
 
-Token *makeLiteralToken(TokenKind kind, char literal) {
+Token *makeLexemeToken(TokenKind kind, char lexeme) {
   Token *result = malloc(sizeof(Token));
   result->kind = kind;
-  result->lexeme = literal;
+  result->lexeme = lexeme;
   return result;
 }
 
@@ -79,41 +81,45 @@ Token *lex() {
     return makeToken(EOF);
   if (lexerContent[lexerPosition] == '(') {
     lexerPosition++;
-    return makeToken(OPARAN);
+    return makeLexemeToken(OPARAN, '(');
   }
   if (lexerContent[lexerPosition] == ')') {
     lexerPosition++;
-    return makeToken(CPARAN);
+    return makeLexemeToken(CPARAN, ')');
   }
   if (lexerContent[lexerPosition] == '[') {
     lexerPosition++;
-    return makeToken(OSBRACKET);
+    return makeLexemeToken(OSBRACKET, '[');
   }
   if (lexerContent[lexerPosition] == ']') {
     lexerPosition++;
-    return makeToken(CSBRACKET);
+    return makeLexemeToken(CSBRACKET, ']');
   }
   if (lexerContent[lexerPosition] == '-') {
     lexerPosition++;
-    return makeToken(DASH);
+    return makeLexemeToken(DASH, '-');
   }
   if (lexerContent[lexerPosition] == '|') {
     lexerPosition++;
-    return makeToken(PIPE);
+    return makeLexemeToken(PIPE, '|');
   }
   if (lexerContent[lexerPosition] == '*') {
     lexerPosition++;
-    return makeToken(STAR);
+    return makeLexemeToken(STAR, '*');
   }
   if (lexerContent[lexerPosition] == '+') {
     lexerPosition++;
-    return makeToken(PLUS);
+    return makeLexemeToken(PLUS, '+');
   }
   if (lexerContent[lexerPosition] == '?') {
     lexerPosition++;
-    return makeToken(QUESTION);
+    return makeLexemeToken(QUESTION, '?');
   }
-  Token *result = makeLiteralToken(LITERAL, lexerContent[lexerPosition]);
+  if (lexerContent[lexerPosition] == '\\') {
+    lexerPosition++;
+    return makeLexemeToken(BSLASH, '\\');
+  }
+  Token *result = makeLexemeToken(LITERAL, lexerContent[lexerPosition]);
   lexerPosition++;
   return result;
 }
@@ -180,15 +186,25 @@ Node *getFinishNode(Node *node) {
 }
 
 Node *reToNFA(char *re) {
-  if (re)
-    initLexer(re);
+  if (re) initLexer(re);
   Token *token;
   Node *entry = makeNode(true, true);
   Node *last = entry;
   while ((token = lex())->kind != EOF) {
     getFinishNodeSeen = NULL;
+    if (inBackslash) {
+      inBackslash = false;
+      Node *node = makeNode(false, true);
+      last->transitions[0] = makeTransition(token->lexeme, token->lexeme, node);
+      last->isFinish = false;
+      last = node;
+      continue;
+    }
     if (peek()->kind == OPARAN) {
       beforeParanEntry = last;
+    }
+    if (token->kind == BSLASH) {
+      inBackslash = true;
     }
     if (token->kind == OPARAN) {
       paranEntry = last;

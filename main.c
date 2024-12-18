@@ -360,5 +360,23 @@ int main(int argc, char *argv) {
   assert(test(nfa, "_var1") == true);
   assert(test(nfa, "vv1") == true);
   assert(test(nfa, "v1") == true);
+
+  nfa = reToNFA("\\|");
+  assert(test(nfa, "|") == true);
+
+  nfa = reToNFA("\\[");
+  assert(test(nfa, "[") == true);
+
+  nfa = reToNFA("\\]");
+  assert(test(nfa, "]") == true);
+
+  nfa = reToNFA("\\+");
+  assert(test(nfa, "+") == true);
+
+  nfa = reToNFA("\\*");
+  assert(test(nfa, "*") == true);
+
+  nfa = reToNFA("\\?");
+  assert(test(nfa, "?") == true);
 }
 #endif
