@@ -124,5 +124,9 @@ int main(int argc, char *argv[]) {
   token = clex();
   assert(token.kind == CCURLYBRACE);
   assert(strcmp(token.lexeme, "}") == 0);
+
+  token = clex();
+  assert(token.kind == 0);
+  assert(token.lexeme == NULL);
 }
 ```
