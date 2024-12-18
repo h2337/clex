@@ -52,11 +52,10 @@ clexToken clex(clexLexer *lexer) {
   strncpy(part, lexer->content + start, lexer->position - start);
 
   while (strlen(part)) {
-    for (int i = 0; i < CLEX_MAX_RULES; i++) {
+    for (int i = 0; i < CLEX_MAX_RULES; i++)
       if (lexer->rules[i])
         if (clexNfaTest(lexer->rules[i]->nfa, part))
           return (clexToken){.lexeme = part, .kind = lexer->rules[i]->kind};
-    }
     part[strlen(part) - 1] = '\0';
     lexer->position--;
     if (isspace(lexer->content[lexer->position]))
