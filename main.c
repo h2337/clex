@@ -8,6 +8,62 @@ typedef enum TokenKind {
   AUTO,
   BOOL,
   BREAK,
+  CASE,
+  CHAR,
+  COMPLEX,
+  CONST,
+  CONTINUE,
+  DEFAULT,
+  DO,
+  DOUBLE,
+  ELSE,
+  ENUM,
+  EXTERN,
+  FLOAT,
+  FOR,
+  GOTO,
+  IF,
+  IMAGINARY,
+  INLINE,
+  INT,
+  LONG,
+  REGISTER,
+  RESTRICT,
+  RETURN,
+  SHORT,
+  SIGNED,
+  SIZEOF,
+  STATIC,
+  STRUCT,
+  SWITCH,
+  TYPEDEF,
+  UNION,
+  UNSIGNED,
+  VOID,
+  VOLATILE,
+  WHILE,
+  ELLIPSIS,
+  RIGHT_ASSIGN,
+  LEFT_ASSIGN,
+  ADD_ASSIGN,
+  SUB_ASSIGN,
+  MUL_ASSIGN,
+  DIV_ASSIGN,
+  MOD_ASSIGN,
+  AND_ASSIGN,
+  XOR_ASSIGN,
+  OR_ASSIGN,
+  RIGHT_OP,
+  LEFT_OP,
+  INC_OP,
+  DEC_OP,
+  PTR_OP,
+  AND_OP,
+  OR_OP,
+  LE_OP,
+  GE_OP,
+  EQ_OP,
+  NE_OP,
   SEMICOL,
   IDENTIFIER,
 } TokenKind;
@@ -42,6 +98,66 @@ int main(int argc, char *argv[]) {
   assert(strcmp(token->lexeme, ";") == 0);
 
   deleteKinds();
+
+  registerKind("auto", AUTO);
+  registerKind("_Bool", BOOL);
+  registerKind("break", BREAK);
+  registerKind("case", CASE);
+  registerKind("char", CHAR);
+  registerKind("_Complex", COMPLEX);
+  registerKind("const", CONST);
+  registerKind("continue", CONTINUE);
+  registerKind("default", DEFAULT);
+  registerKind("do", DO);
+  registerKind("double", DOUBLE);
+  registerKind("else", ELSE);
+  registerKind("enum", ENUM);
+  registerKind("extern", EXTERN);
+  registerKind("float", FLOAT);
+  registerKind("for", FOR);
+  registerKind("goto", GOTO);
+  registerKind("if", IF);
+  registerKind("_Imaginary", IMAGINARY);
+  registerKind("inline", INLINE);
+  registerKind("int", INT);
+  registerKind("long", LONG);
+  registerKind("register", REGISTER);
+  registerKind("restrict", RESTRICT);
+  registerKind("return", RETURN);
+  registerKind("short", SHORT);
+  registerKind("signed", SIGNED);
+  registerKind("sizeof", SIZEOF);
+  registerKind("static", STATIC);
+  registerKind("struct", STRUCT);
+  registerKind("switch", SWITCH);
+  registerKind("typedef", TYPEDEF);
+  registerKind("union", UNION);
+  registerKind("unsigned", UNSIGNED);
+  registerKind("void", VOID);
+  registerKind("volatile", VOLATILE);
+  registerKind("while", WHILE);
+  registerKind("...", ELLIPSIS);
+  registerKind(">>=", RIGHT_ASSIGN);
+  registerKind("<<=", LEFT_ASSIGN);
+  registerKind("+=", ADD_ASSIGN);
+  registerKind("-=", SUB_ASSIGN);
+  registerKind("*=", MUL_ASSIGN);
+  registerKind("/=", DIV_ASSIGN);
+  registerKind("%=", MOD_ASSIGN);
+  registerKind("&=", AND_ASSIGN);
+  registerKind("^=", XOR_ASSIGN);
+  registerKind("|=", OR_ASSIGN);
+  registerKind(">>", RIGHT_OP);
+  registerKind("<<", LEFT_OP);
+  registerKind("++", INC_OP);
+  registerKind("--", DEC_OP);
+  registerKind("->", PTR_OP);
+  registerKind("&&", AND_OP);
+  registerKind("||", OR_OP);
+  registerKind("<=", LE_OP);
+  registerKind(">=", GE_OP);
+  registerKind("==", EQ_OP);
+  registerKind("!=", NE_OP);
 }
 #endif
 
