@@ -263,7 +263,9 @@ Node *NFAFromRe(const char *re) {
           lastBeforeParanEntry = NULL;
         }
         else if (beforeParanEntry) {
-          beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->fromValue, beforeParanEntry->transitions[0]->toValue, pipeEntry);
+          for (int i = 0; i < 100; i++)
+            if (beforeParanEntry->transitions[i])
+              beforeParanEntry->transitions[i] = makeTransition(beforeParanEntry->transitions[i]->fromValue, beforeParanEntry->transitions[0]->toValue, pipeEntry);
           beforeParanEntry = pipeEntry;
         } else {
           entry = pipeEntry;
@@ -383,6 +385,10 @@ Node *NFAFromRe(const char *re) {
         }
       }
       lex();
+      if (peek()->kind == OPARAN) {
+        lastBeforeParanEntry = beforeParanEntry;
+        beforeParanEntry = last;
+      }
       last->isFinish = false;
       last = node;
     }
