@@ -312,7 +312,7 @@ int main(int argc, char *argv[]) {
 #include "fa.h"
 #include <assert.h>
 
-int main(int argc, char *argv) {
+int main(int argc, char *argv[]) {
   Node *nfa = NFAFromRe("a");
   assert(NFATest(nfa, "a") == true);
   assert(NFATest(nfa, "b") == false);
@@ -495,7 +495,7 @@ int main(int argc, char *argv) {
 
 #include "fa.h"
 
-int main(int argc, char *argv) {
+int main(int argc, char *argv[]) {
   /* TODO: Prints wrong graph, fix it
   Node *nfa = NFAFromRe("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
   NFADraw(nfa);
