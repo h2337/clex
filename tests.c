@@ -496,7 +496,12 @@ int main(int argc, char *argv) {
 #include "fa.h"
 
 int main(int argc, char *argv) {
+  /* TODO: Prints wrong graph, fix it
   Node *nfa = NFAFromRe("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
+  NFADraw(nfa);
+  */
+
+  Node *nfa = NFAFromRe("a(bc|de)*f");
   NFADraw(nfa);
 }
 #endif

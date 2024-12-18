@@ -162,7 +162,7 @@ static unsigned long getDrawMapping(unsigned long *drawMapping, unsigned long va
 
 static void drawNode(Node *nfa, char **drawSeen, unsigned long *drawMapping) {
   for (int i = 0; i < 100; i++)
-    if (nfa->transitions[i]) {
+    if (nfa->transitions[i] && !inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue))) {
       if (nfa->transitions[i]->fromValue || nfa->transitions[i]->toValue)
         printf("  %lu -> %lu [label=\"%c-%c\"];\n", getDrawMapping(drawMapping, (unsigned long)nfa), getDrawMapping(drawMapping, (unsigned long)nfa->transitions[i]->to), nfa->transitions[i]->fromValue ? nfa->transitions[i]->fromValue : ' ', nfa->transitions[i]->toValue ? nfa->transitions[i]->toValue : ' ');
       else
