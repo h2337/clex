@@ -138,12 +138,13 @@ bool test(Node *nfa, char *target) {
   for (int i = 0; i < strlen(target); i++) {
     for (int j = 0; j < 100; j++)
       if (nfa->transitions[j]) {
-        if (nfa->transitions[j]->value == target[i])
+        if (nfa->transitions[j]->value == target[i]) {
           if (test(nfa->transitions[j]->to, target + i + 1))
             return true;
-        if (nfa->transitions[j]->value == '\0')
+        } else if (nfa->transitions[j]->value == '\0') {
           if (test(nfa->transitions[j]->to, target + i))
             return true;
+        }
       }
     return false;
   }
@@ -152,10 +153,19 @@ bool test(Node *nfa, char *target) {
   return false;
 }
 
+void drawNFA(Node *nfa) {
+  for (int i = 0; i < 100; i++)
+    if (nfa->transitions[i]) {
+      printf("%d -> %d [label=\"%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->value);
+      drawNFA(nfa->transitions[i]->to);
+    }
+}
+
 int main(int argc, char *argv[]) {
   char *re = argv[1];
   initLexer(re);
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
+  //drawNFA(nfa);
 }
