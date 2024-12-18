@@ -1,12 +1,9 @@
-
-
 #define _CRT_SECURE_NO_WARNINGS
 #include "clex.h"
 #include "fa.h"
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 typedef struct Rule {
   const char *re;
