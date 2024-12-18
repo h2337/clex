@@ -249,7 +249,11 @@ Node *reToNFA(char *re) {
         last = finish;
       } else {
         Node *pipeEntry = makeNode(beforeParanEntry ? false : true, false);
-        if (beforeParanEntry) {
+        if (lastBeforeParanEntry) {
+          lastBeforeParanEntry->transitions[0] = makeTransition(lastBeforeParanEntry->transitions[0]->fromValue, lastBeforeParanEntry->transitions[0]->toValue, pipeEntry);
+          lastBeforeParanEntry = NULL;
+        }
+        else if (beforeParanEntry) {
           beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->fromValue, beforeParanEntry->transitions[0]->toValue, pipeEntry);
           beforeParanEntry = pipeEntry;
         } else {
@@ -291,7 +295,11 @@ Node *reToNFA(char *re) {
         last = finish;
       } else {
         Node *starEntry = makeNode(beforeParanEntry ? false : true, false);
-        if (beforeParanEntry)
+        if (lastBeforeParanEntry) {
+          lastBeforeParanEntry->transitions[0] = makeTransition(lastBeforeParanEntry->transitions[0]->fromValue, lastBeforeParanEntry->transitions[0]->toValue, starEntry);
+          lastBeforeParanEntry = NULL;
+        }
+        else if (beforeParanEntry)
           beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->fromValue, beforeParanEntry->transitions[0]->toValue, starEntry);
         else
           entry = starEntry;
