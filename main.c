@@ -88,6 +88,8 @@ typedef enum TokenKind {
   CARET,
   PIPE,
   QUESTION,
+  STRINGLITERAL,
+  CONSTANT,
   IDENTIFIER,
 } TokenKind;
 
@@ -205,6 +207,11 @@ int main(int argc, char *argv[]) {
   registerKind("^", CARET);
   registerKind("|", PIPE);
   registerKind("\\?", QUESTION);
+  registerKind("L?\"[ -~]*\"", STRINGLITERAL);
+  registerKind("0[xX][a-fA-F0-9]+[uU]?[lL]?[lL]?", CONSTANT);
+  registerKind("0[0-7]*[uU]?[lL]?[lL]?", CONSTANT);
+  registerKind("[1-9][0-9]*[uU]?[lL]?[lL]?", CONSTANT);
+  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
 }
 #endif
 
