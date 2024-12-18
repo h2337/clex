@@ -38,7 +38,7 @@ void deleteKinds() {
   rules = calloc(1024, sizeof(Rule *));
 }
 
-Token *clex() {
+Token clex() {
   while (isspace(clexContent[clexPosition])) clexPosition++;
   size_t start = clexPosition;
   while (!isspace(clexContent[++clexPosition]) && clexContent[clexPosition] != '\0');
@@ -50,10 +50,7 @@ Token *clex() {
       if (rules[i]) {
         bool matches = test(rules[i]->nfa, part);
         if (matches) {
-          Token *token = malloc(sizeof(Token));
-          token->lexeme = part;
-          token->kind = rules[i]->kind;
-          return token;
+          return (Token){.lexeme = part, .kind = rules[i]->kind};
         }
       }
     }

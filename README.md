@@ -53,72 +53,72 @@ int main(int argc, char *argv[]) {
 
   initClex("int main(int argc, char *argv[]) {\nreturn 23;\n}");
 
-  Token *token = clex();
-  assert(token->kind == INT);
-  assert(strcmp(token->lexeme, "int") == 0);
+  Token token = clex();
+  assert(token.kind == INT);
+  assert(strcmp(token.lexeme, "int") == 0);
 
   token = clex();
-  assert(token->kind == IDENTIFIER);
-  assert(strcmp(token->lexeme, "main") == 0);
+  assert(token.kind == IDENTIFIER);
+  assert(strcmp(token.lexeme, "main") == 0);
 
   token = clex();
-  assert(token->kind == OPARAN);
-  assert(strcmp(token->lexeme, "(") == 0);
+  assert(token.kind == OPARAN);
+  assert(strcmp(token.lexeme, "(") == 0);
 
   token = clex();
-  assert(token->kind == INT);
-  assert(strcmp(token->lexeme, "int") == 0);
+  assert(token.kind == INT);
+  assert(strcmp(token.lexeme, "int") == 0);
 
   token = clex();
-  assert(token->kind == IDENTIFIER);
-  assert(strcmp(token->lexeme, "argc") == 0);
+  assert(token.kind == IDENTIFIER);
+  assert(strcmp(token.lexeme, "argc") == 0);
 
   token = clex();
-  assert(token->kind == COMMA);
-  assert(strcmp(token->lexeme, ",") == 0);
+  assert(token.kind == COMMA);
+  assert(strcmp(token.lexeme, ",") == 0);
 
   token = clex();
-  assert(token->kind == CHAR);
-  assert(strcmp(token->lexeme, "char") == 0);
+  assert(token.kind == CHAR);
+  assert(strcmp(token.lexeme, "char") == 0);
 
   token = clex();
-  assert(token->kind == STAR);
-  assert(strcmp(token->lexeme, "*") == 0);
+  assert(token.kind == STAR);
+  assert(strcmp(token.lexeme, "*") == 0);
 
   token = clex();
-  assert(token->kind == IDENTIFIER);
-  assert(strcmp(token->lexeme, "argv") == 0);
+  assert(token.kind == IDENTIFIER);
+  assert(strcmp(token.lexeme, "argv") == 0);
 
   token = clex();
-  assert(token->kind == OSQUAREBRACE);
-  assert(strcmp(token->lexeme, "[") == 0);
+  assert(token.kind == OSQUAREBRACE);
+  assert(strcmp(token.lexeme, "[") == 0);
 
   token = clex();
-  assert(token->kind == CSQUAREBRACE);
-  assert(strcmp(token->lexeme, "]") == 0);
+  assert(token.kind == CSQUAREBRACE);
+  assert(strcmp(token.lexeme, "]") == 0);
 
   token = clex();
-  assert(token->kind == CPARAN);
-  assert(strcmp(token->lexeme, ")") == 0);
+  assert(token.kind == CPARAN);
+  assert(strcmp(token.lexeme, ")") == 0);
 
   token = clex();
-  assert(token->kind == OCURLYBRACE);
-  assert(strcmp(token->lexeme, "{") == 0);
+  assert(token.kind == OCURLYBRACE);
+  assert(strcmp(token.lexeme, "{") == 0);
 
   token = clex();
-  assert(token->kind == RETURN);
-  assert(strcmp(token->lexeme, "return") == 0);
+  assert(token.kind == RETURN);
+  assert(strcmp(token.lexeme, "return") == 0);
 
   token = clex();
-  assert(token->kind == CONSTANT);
-  assert(strcmp(token->lexeme, "23") == 0);
+  assert(token.kind == CONSTANT);
+  assert(strcmp(token.lexeme, "23") == 0);
 
   token = clex();
-  assert(token->kind == SEMICOL);
-  assert(strcmp(token->lexeme, ";") == 0);
+  assert(token.kind == SEMICOL);
+  assert(strcmp(token.lexeme, ";") == 0);
 
   token = clex();
-  assert(token->kind == CCURLYBRACE);
-  assert(strcmp(token->lexeme, "}") == 0);
+  assert(token.kind == CCURLYBRACE);
+  assert(strcmp(token.lexeme, "}") == 0);
 }
 ```
