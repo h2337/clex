@@ -169,14 +169,14 @@ int main(int argc, char *argv[]) {
   registerKind("%=", MOD_ASSIGN);
   registerKind("&=", AND_ASSIGN);
   registerKind("^=", XOR_ASSIGN);
-  //registerKind("|=", OR_ASSIGN);
+  registerKind("\\|=", OR_ASSIGN);
   registerKind(">>", RIGHT_OP);
   registerKind("<<", LEFT_OP);
   registerKind("++", INC_OP);
   registerKind("--", DEC_OP);
   registerKind("->", PTR_OP);
   registerKind("&&", AND_OP);
-  //registerKind("||", OR_OP);
+  registerKind("\\|\\|", OR_OP);
   registerKind("<=", LE_OP);
   registerKind(">=", GE_OP);
   registerKind("==", EQ_OP);
@@ -189,22 +189,22 @@ int main(int argc, char *argv[]) {
   registerKind("=", EQUAL);
   registerKind("(", OPARAN);
   registerKind(")", CPARAN);
-  //registerKind("[|<:", OSQUAREBRACE);
-  //registerKind("]|:>", CSQUAREBACE);
+  registerKind("\\[|<:", OSQUAREBRACE);
+  registerKind("\\]|:>", CSQUAREBACE);
   registerKind(".", DOT);
   registerKind("&", AMPER);
   registerKind("!", EXCLAMATION);
   registerKind("~", TILDE);
   registerKind("-", MINUS);
-  //registerKind("+", PLUS);
-  //registerKind("*", STAR);
+  registerKind("\\+", PLUS);
+  registerKind("\\*", STAR);
   registerKind("/", SLASH);
   registerKind("%", PERCENT);
   registerKind("<", RANGLE);
   registerKind(">", LANGLE);
   registerKind("^", CARET);
   registerKind("|", PIPE);
-  //registerKind("?", QUESTION);
+  registerKind("\\?", QUESTION);
 }
 #endif
 
