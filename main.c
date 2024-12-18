@@ -25,6 +25,22 @@ int main(int argc, char *argv[]) {
   assert(token->kind == AUTO);
   assert(strcmp(token->lexeme, "auto") == 0);
 
+  token = clex();
+  assert(token->kind == IDENTIFIER);
+  assert(strcmp(token->lexeme, "ident1") == 0);
+
+  token = clex();
+  assert(token->kind == SEMICOL);
+  assert(strcmp(token->lexeme, ";") == 0);
+
+  token = clex();
+  assert(token->kind == BREAK);
+  assert(strcmp(token->lexeme, "break") == 0);
+
+  token = clex();
+  assert(token->kind == SEMICOL);
+  assert(strcmp(token->lexeme, ";") == 0);
+
   deleteKinds();
 }
 #endif

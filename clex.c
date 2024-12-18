@@ -41,18 +41,26 @@ void deleteKinds() {
 
 Token *clex() {
   size_t start = clexPosition;
-  while (!isspace(clexContent[clexPosition++]));
+  while (!isspace(clexContent[clexPosition++]) && clexContent[clexPosition - 1] != '\0');
   char *part = calloc(clexPosition - start, sizeof(char));
   strncpy(part, clexContent + start, clexPosition - start - 1);
 
-  for (int i = 0; i < 1024; i++) {
-    if (rules[i]) {
-      bool matches = test(rules[i]->nfa, part);
-      Token *token = malloc(sizeof(Token));
-      token->lexeme = part;
-      token->kind = rules[i]->kind;
-      return token;
+  while (strlen(part)) {
+    for (int i = 0; i < 1024; i++) {
+      if (rules[i]) {
+        bool matches = test(rules[i]->nfa, part);
+        if (matches) {
+          Token *token = malloc(sizeof(Token));
+          token->lexeme = part;
+          token->kind = rules[i]->kind;
+          return token;
+        }
+      }
     }
+    part[strlen(part) - 1] = '\0';
+    while (!isspace(clexContent[clexPosition]))
+      clexPosition--;
+    clexPosition--;
   }
 }
 
