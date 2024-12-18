@@ -46,11 +46,13 @@ Token *clex() {
   strncpy(part, clexContent + start, clexPosition - start - 1);
 
   for (int i = 0; i < 1024; i++) {
-    bool matches = test(rules[i]->nfa, part);
-    Token *token = malloc(sizeof(Token));
-    token->lexeme = part;
-    token->kind = rules[i]->kind;
-    return token;
+    if (rules[i]) {
+      bool matches = test(rules[i]->nfa, part);
+      Token *token = malloc(sizeof(Token));
+      token->lexeme = part;
+      token->kind = rules[i]->kind;
+      return token;
+    }
   }
 }
 
