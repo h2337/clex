@@ -152,17 +152,26 @@ static char *getFinishNodeKey(Node *node) {
   return result;
 }
 
+static void drawNode(Node *nfa) {
+  for (int i = 0; i < 100; i++)
+    if (nfa->transitions[i]) {
+      if (nfa->transitions[i]->fromValue || nfa->transitions[i]->toValue)
+        printf("  %lu -> %lu [label=\"%c-%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue ? nfa->transitions[i]->fromValue : ' ', nfa->transitions[i]->toValue ? nfa->transitions[i]->toValue : ' ');
+      else
+        printf("  %lu -> %lu [label=\"e\"];\n", nfa, nfa->transitions[i]->to);
+      if (!inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue))) {
+        insertArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue));
+        drawNode(nfa->transitions[i]->to);
+      }
+    }
+}
+
 void NFADraw(Node *nfa) {
   if (!drawSeen)
     drawSeen = calloc(1024, sizeof(char *));
-  for (int i = 0; i < 100; i++)
-    if (nfa->transitions[i]) {
-      printf("%p -> %p [label=\"%c-%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue);
-      if (!inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue))) {
-        insertArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue));
-        NFADraw(nfa->transitions[i]->to);
-      }
-    }
+  printf("digraph G {\n");
+  drawNode(nfa);
+  printf("}\n");
 }
 
 static Node *getFinishNode(Node *node) {

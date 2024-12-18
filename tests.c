@@ -490,3 +490,15 @@ int main(int argc, char *argv) {
   assert(nfa == 0);
 }
 #endif
+
+#ifdef TEST_NFA_DRAW
+
+#include "fa.h"
+
+int main(int argc, char *argv) {
+  Node *nfa = NFAFromRe("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
+  NFADraw(nfa);
+}
+#endif
+
+
