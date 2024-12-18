@@ -114,6 +114,7 @@ Node *reToNFA() {
     }
     if (token->kind == PIPE) {
       Node *pastEntry = entry;
+      pastEntry->isStart = false;
 
       entry = makeNode(true, false);
 
@@ -129,6 +130,20 @@ Node *reToNFA() {
       Node *finish = makeNode(false, true);
       firstFinish->transitions[0] = makeTransition('\0', finish);
       secondFinish->transitions[0] = makeTransition('\0', finish);
+    }
+    if (token->kind == STAR) {
+      Node *pastEntry = entry;
+      pastEntry->isStart = false;
+
+      Node *finish = makeNode(false, true);
+      entry = makeNode(true, false);
+
+      entry->transitions[0] = makeTransition('\0', pastEntry);
+      entry->transitions[1] = makeTransition('\0', finish);
+      Node *firstFinish = getFinishNode(pastEntry);
+      firstFinish->isFinish = false;
+      firstFinish->transitions[0] = makeTransition('\0', finish);
+      firstFinish->transitions[1] = makeTransition('\0', pastEntry);
     }
   }
   return entry;
@@ -169,5 +184,5 @@ int main(int argc, char *argv[]) {
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
-  drawNFA(nfa);
+  //drawNFA(nfa);
 }
