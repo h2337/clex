@@ -26,8 +26,7 @@ void registerKind(char *re, int kind) {
     if (!rules[i]) {
       Rule *rule = malloc(sizeof(Rule));
       rule->re = re;
-      initLexer(re);
-      rule->nfa = reToNFA();
+      rule->nfa = reToNFA(re);
       rule->kind = kind;
       rules[i] = rule;
       break;

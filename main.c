@@ -214,26 +214,21 @@ int main(int argc, char *argv[]) {
 #include <assert.h>
 
 int main(int argc, char *argv) {
-  // TODO: Move initLexer into reToNFA
-  initLexer("a");
-  Node *nfa = reToNFA();
+  Node *nfa = reToNFA("a");
   assert(test(nfa, "a") == true);
   assert(test(nfa, "b") == false);
 
-  initLexer("ab");
-  nfa = reToNFA();
+  nfa = reToNFA("ab");
   assert(test(nfa, "ab") == true);
   assert(test(nfa, "a") == false);
   assert(test(nfa, "b") == false);
 
-  initLexer("ab|c");
-  nfa = reToNFA();
+  nfa = reToNFA("ab|c");
   assert(test(nfa, "ab") == true);
   assert(test(nfa, "c") == true);
   assert(test(nfa, "abc") == false);
 
-  initLexer("ab*c");
-  nfa = reToNFA();
+  nfa = reToNFA("ab*c");
   assert(test(nfa, "c") == true);
   assert(test(nfa, "abc") == true);
   assert(test(nfa, "ababc") == true);
@@ -241,8 +236,7 @@ int main(int argc, char *argv) {
   assert(test(nfa, "abd") == false);
   assert(test(nfa, "acc") == false);
 
-  initLexer("ab+c");
-  nfa = reToNFA();
+  nfa = reToNFA("ab+c");
   assert(test(nfa, "c") == false);
   assert(test(nfa, "abc") == true);
   assert(test(nfa, "ababc") == true);
@@ -250,8 +244,7 @@ int main(int argc, char *argv) {
   assert(test(nfa, "abd") == false);
   assert(test(nfa, "acc") == false);
 
-  initLexer("ab?c");
-  nfa = reToNFA();
+  nfa = reToNFA("ab?c");
   assert(test(nfa, "c") == true);
   assert(test(nfa, "abc") == true);
   assert(test(nfa, "ababc") == false);
@@ -259,8 +252,7 @@ int main(int argc, char *argv) {
   assert(test(nfa, "abd") == false);
   assert(test(nfa, "acc") == false);
 
-  initLexer("[ab]c");
-  nfa = reToNFA();
+  nfa = reToNFA("[ab]c");
   assert(test(nfa, "c") == false);
   assert(test(nfa, "ac") == true);
   assert(test(nfa, "bc") == true);
@@ -268,8 +260,7 @@ int main(int argc, char *argv) {
   assert(test(nfa, "bd") == false);
   assert(test(nfa, "acc") == false);
 
-  initLexer("[A-Za-z]c");
-  nfa = reToNFA();
+  nfa = reToNFA("[A-Za-z]c");
   assert(test(nfa, "c") == false);
   assert(test(nfa, "ac") == true);
   assert(test(nfa, "bc") == true);
@@ -277,19 +268,16 @@ int main(int argc, char *argv) {
   assert(test(nfa, "Zd") == false);
   assert(test(nfa, "Zc") == true);
 
-  initLexer("[A-Za-z]*c");
-  nfa = reToNFA();
+  nfa = reToNFA("[A-Za-z]*c");
   assert(test(nfa, "AZazc") == true);
   assert(test(nfa, "AZaz") == false);
 
-  initLexer("[A-Za-z]?c");
-  nfa = reToNFA();
+  nfa = reToNFA("[A-Za-z]?c");
   assert(test(nfa, "Ac") == true);
   assert(test(nfa, "c") == true);
   assert(test(nfa, "A") == false);
 
-  initLexer("a(bc|de)f");
-  nfa = reToNFA();
+  nfa = reToNFA("a(bc|de)f");
   assert(test(nfa, "abcf") == true);
   assert(test(nfa, "adef") == true);
   assert(test(nfa, "af") == false);
@@ -299,28 +287,24 @@ int main(int argc, char *argv) {
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
 
-  initLexer("(bc|de)f");
-  nfa = reToNFA();
+  nfa = reToNFA("(bc|de)f");
   assert(test(nfa, "bcf") == true);
   assert(test(nfa, "def") == true);
 
-  initLexer("a(bc)*f");
-  nfa = reToNFA();
+  nfa = reToNFA("a(bc)*f");
   assert(test(nfa, "af") == true);
   assert(test(nfa, "abcf") == true);
   assert(test(nfa, "abcbcf") == true);
   assert(test(nfa, "abcbf") == false);
 
-  initLexer("(bc)*f");
-  nfa = reToNFA();
+  nfa = reToNFA("(bc)*f");
   assert(test(nfa, "f") == true);
   assert(test(nfa, "bcf") == true);
   assert(test(nfa, "bcbcf") == true);
   assert(test(nfa, "bcbf") == false);
   assert(test(nfa, "bc") == false);
 
-  initLexer("a(bc|de)*f");
-  nfa = reToNFA();
+  nfa = reToNFA("a(bc|de)*f");
   assert(test(nfa, "af") == true);
   assert(test(nfa, "abcf") == true);
   assert(test(nfa, "adef") == true);
@@ -332,8 +316,7 @@ int main(int argc, char *argv) {
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
 
-  initLexer("a(bc|de)+f");
-  nfa = reToNFA();
+  nfa = reToNFA("a(bc|de)+f");
   assert(test(nfa, "af") == false);
   assert(test(nfa, "abcf") == true);
   assert(test(nfa, "adef") == true);
@@ -345,8 +328,7 @@ int main(int argc, char *argv) {
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
 
-  initLexer("a(bc|de)?f");
-  nfa = reToNFA();
+  nfa = reToNFA("a(bc|de)?f");
   assert(test(nfa, "af") == true);
   assert(test(nfa, "abcf") == true);
   assert(test(nfa, "adef") == true);
@@ -358,24 +340,21 @@ int main(int argc, char *argv) {
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
 
-  initLexer("([a-zA-Z_])*");
-  nfa = reToNFA();
+  nfa = reToNFA("([a-zA-Z_])*");
   assert(test(nfa, "valid") == true);
   assert(test(nfa, "Valid") == true);
   assert(test(nfa, "_var1") == false);
   assert(test(nfa, "vv1") == false);
   assert(test(nfa, "v1") == false);
 
-  initLexer("([a-zA-Z_]|[0-9])*");
-  nfa = reToNFA();
+  nfa = reToNFA("([a-zA-Z_]|[0-9])*");
   assert(test(nfa, "valid") == true);
   assert(test(nfa, "Valid") == true);
   assert(test(nfa, "_var1") == true);
   assert(test(nfa, "vv1") == true);
   assert(test(nfa, "v1") == true);
 
-  initLexer("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
-  nfa = reToNFA();
+  nfa = reToNFA("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
   assert(test(nfa, "valid") == true);
   assert(test(nfa, "Valid") == true);
   assert(test(nfa, "_var1") == true);
