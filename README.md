@@ -140,7 +140,7 @@ NFA can be drawn with Graphviz.
 #include "fa.h"
 
 int main(int argc, char *argv) {
-  Node *nfa = NFAFromRe("a(bc|de)*f");
+  Node *nfa = NFAFromRe("[A-Z]a(bc|de)*f");
   NFADraw(nfa);
 }
 ```
@@ -149,20 +149,21 @@ Above code will output this to stdout:
 
 ```dot
 digraph G {
-  1 -> 0 [label="a-a"];
-  0 -> 2 [label="e"];
+  1 -> 0 [label="A-Z"];
+  0 -> 2 [label="a-a"];
   2 -> 3 [label="e"];
-  3 -> 4 [label="b-b"];
-  4 -> 5 [label="c-c"];
-  5 -> 6 [label="e"];
+  3 -> 4 [label="e"];
+  4 -> 5 [label="b-b"];
+  5 -> 6 [label="c-c"];
   6 -> 7 [label="e"];
-  7 -> 8 [label="f-f"];
-  6 -> 0 [label="e"];
-  0 -> 9 [label="e"];
-  9 -> 10 [label="d-d"];
-  10 -> 11 [label="e-e"];
-  11 -> 6 [label="e"];
-  2 -> 7 [label="e"];
+  7 -> 8 [label="e"];
+  8 -> 9 [label="f-f"];
+  7 -> 2 [label="e"];
+  2 -> 10 [label="e"];
+  10 -> 11 [label="d-d"];
+  11 -> 12 [label="e-e"];
+  12 -> 7 [label="e"];
+  3 -> 8 [label="e"];
 }
 ```
 
@@ -170,4 +171,4 @@ The output can be processed with Graphviz to get the graph image: `dot -Tpng out
 
 Here's what it produces:
 
-<img src="https://github.com/h2337/file-hosting/blob/e9e584acf349378ea507e088a9639980684d5d68/nfa.png?raw=true">
+<img src="https://github.com/h2337/file-hosting/blob/023a3a6142b28735b9c4a10fd2be42cf456b43aa/nfa.png?raw=true">
