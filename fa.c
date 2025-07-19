@@ -265,7 +265,7 @@ Node *NFAFromRe(const char *re) {
         else if (beforeParanEntry) {
           for (int i = 0; i < 100; i++)
             if (beforeParanEntry->transitions[i])
-              beforeParanEntry->transitions[i] = makeTransition(beforeParanEntry->transitions[i]->fromValue, beforeParanEntry->transitions[0]->toValue, pipeEntry);
+              beforeParanEntry->transitions[i] = makeTransition(beforeParanEntry->transitions[i]->fromValue, beforeParanEntry->transitions[i]->toValue, pipeEntry);
           beforeParanEntry = pipeEntry;
         } else {
           entry = pipeEntry;
