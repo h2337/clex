@@ -252,20 +252,38 @@ Node *reToNFA() {
       finish->transitions[1] = makeTransition('\0', beforeParanEntry ? beforeParanEntry : entry);
     }
     if (token->kind == QUESTION) {
-      Node *pastEntry = entry;
-      pastEntry->isStart = false;
+      if (!paranEntry) {
+        Node *pastEntry = entry;
+        pastEntry->isStart = false;
 
-      entry = makeNode(true, false);
+        entry = makeNode(true, false);
 
-      entry->transitions[0] = makeTransition('\0', pastEntry);
-      Node *firstFinish = getFinishNode(pastEntry);
-      firstFinish->isFinish = false;
+        entry->transitions[0] = makeTransition('\0', pastEntry);
+        Node *firstFinish = getFinishNode(pastEntry);
+        firstFinish->isFinish = false;
 
-      Node *finish = makeNode(false, true);
-      firstFinish->transitions[0] = makeTransition('\0', finish);
-      entry->transitions[1] = makeTransition('\0', finish);
+        Node *finish = makeNode(false, true);
+        firstFinish->transitions[0] = makeTransition('\0', finish);
+        entry->transitions[1] = makeTransition('\0', finish);
 
-      last = finish;
+        last = finish;
+      } else {
+        Node *questionEntry = makeNode(beforeParanEntry ? false : true, false);
+        if (beforeParanEntry)
+          beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->value, questionEntry);
+        else
+          entry = questionEntry;
+
+        questionEntry->transitions[0] = makeTransition('\0', paranEntry);
+        Node *firstFinish = getFinishNode(paranEntry);
+        firstFinish->isFinish = false;
+
+        Node *finish = makeNode(false, true);
+        firstFinish->transitions[0] = makeTransition('\0', finish);
+        questionEntry->transitions[1] = makeTransition('\0', finish);
+
+        last = finish;
+      }
     }
     if (token->kind == OSBRACKET) {
       char *values = calloc(1000, sizeof(char));
@@ -477,6 +495,19 @@ int main(int argc, char *argv[]) {
   assert(test(nfa, "abcbcf") == true);
   assert(test(nfa, "adedef") == true);
   assert(test(nfa, "abcdef") == true);
+  assert(test(nfa, "abf") == false);
+  assert(test(nfa, "abccf") == false);
+  assert(test(nfa, "bcf") == false);
+  assert(test(nfa, "abc") == false);
+
+  initLexer("a(bc|de)?f");
+  nfa = reToNFA();
+  assert(test(nfa, "af") == true);
+  assert(test(nfa, "abcf") == true);
+  assert(test(nfa, "adef") == true);
+  assert(test(nfa, "abcbcf") == false);
+  assert(test(nfa, "adedef") == false);
+  assert(test(nfa, "abcdef") == false);
   assert(test(nfa, "abf") == false);
   assert(test(nfa, "abccf") == false);
   assert(test(nfa, "bcf") == false);
