@@ -9,7 +9,7 @@
 
 clex is a simple lexer generator for C.
 
-With clex you can associate a regex pattern to each token type with `registerKind(regex, type)` call, pass the source using `initClex(source)` call, and then lex the next token with `clex()` call.
+With clex you can associate a regex pattern to each token type with `clexRegisterKind(regex, type)` call, pass the source using `clexInit(source)` call, and then lex the next token with `clex()` call.
 
 ## Example
 
@@ -36,22 +36,22 @@ typedef enum TokenKind {
 } TokenKind;
 
 int main(int argc, char *argv[]) {
-  registerKind("int", INT);
-  registerKind("\\(", OPARAN);
-  registerKind("\\)", CPARAN);
-  registerKind("\\[|<:", OSQUAREBRACE);
-  registerKind("\\]|:>", CSQUAREBRACE);
-  registerKind("{|<%", OCURLYBRACE);
-  registerKind("}|%>", CCURLYBRACE);
-  registerKind(",", COMMA);
-  registerKind("char", CHAR);
-  registerKind("\\*", STAR);
-  registerKind("return", RETURN);
-  registerKind("[1-9][0-9]*([uU])?([lL])?([lL])?", CONSTANT);
-  registerKind(";", SEMICOL);
-  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
+  clexRegisterKind("int", INT);
+  clexRegisterKind("\\(", OPARAN);
+  clexRegisterKind("\\)", CPARAN);
+  clexRegisterKind("\\[|<:", OSQUAREBRACE);
+  clexRegisterKind("\\]|:>", CSQUAREBRACE);
+  clexRegisterKind("{|<%", OCURLYBRACE);
+  clexRegisterKind("}|%>", CCURLYBRACE);
+  clexRegisterKind(",", COMMA);
+  clexRegisterKind("char", CHAR);
+  clexRegisterKind("\\*", STAR);
+  clexRegisterKind("return", RETURN);
+  clexRegisterKind("[1-9][0-9]*([uU])?([lL])?([lL])?", CONSTANT);
+  clexRegisterKind(";", SEMICOL);
+  clexRegisterKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
 
-  initClex("int main(int argc, char *argv[]) {\nreturn 23;\n}");
+  clexInit("int main(int argc, char *argv[]) {\nreturn 23;\n}");
 
   Token token = clex();
   assert(token.kind == INT);
