@@ -21,9 +21,7 @@ void clexInit(const char *content) {
 }
 
 bool clexRegisterKind(const char *re, int kind) {
-  if (!rules) {
-    rules = calloc(CLEX_MAX_RULES, sizeof(Rule *));
-  }
+  if (!rules) rules = calloc(CLEX_MAX_RULES, sizeof(Rule *));
   for (int i = 0; i < CLEX_MAX_RULES; i++) {
     if (!rules[i]) {
       Rule *rule = malloc(sizeof(Rule));
