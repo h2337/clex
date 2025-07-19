@@ -36,6 +36,9 @@ Transition *makeTransition(char value, Node *to) {
 typedef enum TokenKind {
   OPARAN,
   CPARAN,
+  OSBRACKET,
+  CSBRACKET,
+  DASH,
   PIPE,
   STAR,
   LITERAL,
@@ -79,6 +82,18 @@ Token *lex() {
     lexerPosition++;
     return makeToken(CPARAN);
   }
+  if (lexerContent[lexerPosition] == '[') {
+    lexerPosition++;
+    return makeToken(OSBRACKET);
+  }
+  if (lexerContent[lexerPosition] == ']') {
+    lexerPosition++;
+    return makeToken(CSBRACKET);
+  }
+  if (lexerContent[lexerPosition] == '-') {
+    lexerPosition++;
+    return makeToken(DASH);
+  }
   if (lexerContent[lexerPosition] == '|') {
     lexerPosition++;
     return makeToken(PIPE);
@@ -90,6 +105,12 @@ Token *lex() {
   Token *result = makeLiteralToken(LITERAL, lexerContent[lexerPosition]);
   lexerPosition++;
   return result;
+}
+
+Token *peek() {
+  Token *lexed = lex();
+  lexerPosition--;
+  return lexed;
 }
 
 Node *getFinishNode(Node *node) {
@@ -145,6 +166,28 @@ Node *reToNFA() {
       firstFinish->transitions[0] = makeTransition('\0', finish);
       firstFinish->transitions[1] = makeTransition('\0', pastEntry);
     }
+    if (token->kind == OSBRACKET) {
+      char *values = calloc(1000, sizeof(char));
+      int valuesIndex = -1;
+      while (peek()->kind != CSBRACKET) {
+        char value = lex()->lexeme;
+        values[++valuesIndex] = value;
+        if (peek()->kind == DASH) {
+          lex();
+          char endValue = lex()->lexeme;
+          for (int i = values[valuesIndex]; i <= endValue; i++)
+            values[++valuesIndex] = i;
+        }
+      }
+      Node *node = makeNode(false, true);
+      int index = 0;
+      while (*values != '\0') {
+        last->transitions[index++] = makeTransition(values[0], node);
+        values++;
+      }
+      last->isFinish = false;
+      last = node;
+    }
   }
   return entry;
 }
@@ -170,10 +213,19 @@ bool test(Node *nfa, char *target) {
   return false;
 }
 
+void drawNFA(Node *nfa) {
+  for (int i = 0; i < 100; i++)
+    if (nfa->transitions[i]) {
+      printf("%d -> %d [label=\"%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->value);
+      drawNFA(nfa->transitions[i]->to);
+    }
+}
+
 int main(int argc, char *argv[]) {
   char *re = argv[1];
   initLexer(re);
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
+  drawNFA(nfa);
 }
