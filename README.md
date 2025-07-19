@@ -23,7 +23,7 @@ Simply pass `fa.c`, `fa.h`, `clex.c`, and `clex.h` to your compiler along with y
 
 Here's how to build & run the tests:
 
-`gcc tests.c fa.c fa.h clex.c clex.h -D TEST_CLEX` (there's also `TEST_REGEX` and `TEST_NFA_DRAW`)
+`gcc tests.c fa.c fa.h clex.c clex.h -D TEST_CLEX && ./a.out` (there's also `TEST_REGEX` and `TEST_NFA_DRAW`)
 
 No output means all tests passed!
 
