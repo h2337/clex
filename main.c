@@ -208,17 +208,16 @@ int main(int argc, char *argv[]) {
   registerKind("\\|", PIPE);
   registerKind("\\?", QUESTION);
   registerKind("L?\"[ -~]*\"", STRINGLITERAL);
-  registerKind("0[xX][a-fA-F0-9]+[uU]?[lL]?[lL]?", CONSTANT);
-  registerKind("0[0-7]*[uU]?[lL]?[lL]?", CONSTANT);
-  registerKind("[1-9][0-9]*", CONSTANT); // TODO: Remove when []? is fixed
-  registerKind("[1-9][0-9]*[uU]?[lL]?[lL]?", CONSTANT);
+  registerKind("0[xX][a-fA-F0-9]+([uU])?([lL])?([lL])?", CONSTANT);
+  registerKind("0[0-7]*([uU])?([lL])?([lL])?", CONSTANT);
+  registerKind("[1-9][0-9]*([uU])?([lL])?([lL])?", CONSTANT);
   registerKind("L?'[ -~]*'", CONSTANT);
   registerKind("[0-9]+[Ee][+-]?[0-9]+[fFlL]", CONSTANT);
   registerKind("[0-9]*.[0-9]+[Ee][+-]?[fFlL]", CONSTANT);
   registerKind("[0-9]+.[0-9]*[Ee][+-]?[fFlL]", CONSTANT);
-  registerKind("0[xX][a-fA-F0-9]+[Pp][+-]?[0-9]+[fFlL]?", CONSTANT);
-  registerKind("0[xX][a-fA-F0-9]*.[a-fA-F0-9]+[Pp][+-]?[0-9]+[fFlL]?", CONSTANT);
-  registerKind("0[xX][a-fA-F0-9]+.[a-fA-F0-9]+[Pp][+-]?[0-9]+[fFlL]?", CONSTANT);
+  registerKind("0[xX][a-fA-F0-9]+[Pp][+-]?[0-9]+([fFlL])?", CONSTANT);
+  registerKind("0[xX][a-fA-F0-9]*.[a-fA-F0-9]+[Pp][+-]?[0-9]+([fFlL])?", CONSTANT);
+  registerKind("0[xX][a-fA-F0-9]+.[a-fA-F0-9]+[Pp][+-]?[0-9]+([fFlL])?", CONSTANT);
   registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
   // TODO: Add comment // and /* */
   // TODO: Add #
@@ -478,8 +477,10 @@ int main(int argc, char *argv) {
   nfa = reToNFA("\\?");
   assert(test(nfa, "?") == true);
 
-  // TODO: Fix
-  //nfa = reToNFA("[1-9][0-9]*[uU]?[lL]?[lL]?");
-  //assert(test(nfa, "23") == true);
+  nfa = reToNFA("(u)(a)");
+  assert(test(nfa, "ua") == true);
+
+  nfa = reToNFA("[1-9][0-9]*([uU])?([lL])?([lL])?");
+  assert(test(nfa, "23") == true);
 }
 #endif

@@ -188,6 +188,7 @@ Node *getFinishNode(Node *node) {
 Node *reToNFA(char *re) {
   if (re) initLexer(re);
   Token *token;
+  Token *beforeLastToken;
   Node *entry = makeNode(true, true);
   Node *last = entry;
   while ((token = lex())->kind != EOF) {
@@ -200,7 +201,7 @@ Node *reToNFA(char *re) {
       last = node;
       continue;
     }
-    if (peek()->kind == OPARAN) {
+    if (peek()->kind == OPARAN && beforeLastToken->kind != CPARAN) {
       beforeParanEntry = last;
     }
     if (token->kind == BSLASH) {
@@ -360,6 +361,7 @@ Node *reToNFA(char *re) {
       last->isFinish = false;
       last = node;
     }
+    beforeLastToken = token;
   }
   return entry;
 }
