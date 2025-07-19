@@ -338,6 +338,7 @@ Node *reToNFA() {
           last->transitions[index++] = makeTransition(fromValue, fromValue, node);
         }
       }
+      lex();
       last->isFinish = false;
       last = node;
     }
