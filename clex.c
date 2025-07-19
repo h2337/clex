@@ -52,7 +52,7 @@ clexToken clex(clexLexer *lexer) {
   strncpy(part, lexer->content + start, lexer->position - start);
 
   while (strlen(part)) {
-    for (int i = 0; i < 1024; i++) {
+    for (int i = 0; i < CLEX_MAX_RULES; i++) {
       if (lexer->rules[i]) {
         bool matches = clexNfaTest(lexer->rules[i]->nfa, part);
         if (matches) {
