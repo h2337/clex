@@ -1,4 +1,4 @@
-<img align="right" src="https://raw.githubusercontent.com/h2337/file-hosting/fdb7de03412e0b4e97488828e9c61117f4120457/clex.png">
+<img align="right" src="https://raw.githubusercontent.com/h2337/clex/refs/heads/master/logo.svg">
 
 ## TOC
 
