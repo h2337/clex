@@ -11,6 +11,10 @@ clex is a simple lexer generator for C.
 
 With clex you can associate a regex pattern to each token type with `clexRegisterKind(regex, type)` call, pass the source using `clexInit(source)` call, and then lex the next token with `clex()` call.
 
+At the end of the input string, `clex()` returns `(Token){.lexeme = NULL, .kind = 0}`.
+
+The maximum number of rules is 1024, but you can change that number in `clex.h`: `#define CLEX_MAX_RULES 1024`
+
 ## Example
 
 ```c
