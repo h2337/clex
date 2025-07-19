@@ -372,7 +372,7 @@ Node *reToNFA(const char *re) {
 }
 
 bool test(Node *nfa, const char *target) {
-  for (int i = 0; i < strlen(target); i++) {
+  for (size_t i = 0; i < strlen(target); i++) {
     for (int j = 0; j < 100; j++)
       if (nfa->transitions[j]) {
         if (nfa->transitions[j]->fromValue <= target[i] && nfa->transitions[j]->toValue >= target[i]) {
