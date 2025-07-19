@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #undef EOF
 
@@ -256,9 +257,74 @@ void drawNFA(Node *nfa) {
 }
 
 int main(int argc, char *argv[]) {
+#ifdef TEST
+  initLexer("a");
+  Node *nfa = reToNFA();
+  assert(test(nfa, "a") == true);
+  assert(test(nfa, "b") == false);
+
+  initLexer("ab");
+  nfa = reToNFA();
+  assert(test(nfa, "ab") == true);
+  assert(test(nfa, "a") == false);
+  assert(test(nfa, "b") == false);
+
+  initLexer("ab|c");
+  nfa = reToNFA();
+  assert(test(nfa, "ab") == true);
+  assert(test(nfa, "c") == true);
+  assert(test(nfa, "abc") == false);
+
+  initLexer("ab*c");
+  nfa = reToNFA();
+  assert(test(nfa, "c") == true);
+  assert(test(nfa, "abc") == true);
+  assert(test(nfa, "ababc") == true);
+  assert(test(nfa, "ab") == false);
+  assert(test(nfa, "abd") == false);
+  assert(test(nfa, "acc") == false);
+
+  initLexer("ab+c");
+  nfa = reToNFA();
+  assert(test(nfa, "c") == false);
+  assert(test(nfa, "abc") == true);
+  assert(test(nfa, "ababc") == true);
+  assert(test(nfa, "ab") == false);
+  assert(test(nfa, "abd") == false);
+  assert(test(nfa, "acc") == false);
+
+  initLexer("ab?c");
+  nfa = reToNFA();
+  assert(test(nfa, "c") == true);
+  assert(test(nfa, "abc") == true);
+  assert(test(nfa, "ababc") == false);
+  assert(test(nfa, "ab") == false);
+  assert(test(nfa, "abd") == false);
+  assert(test(nfa, "acc") == false);
+
+  initLexer("[ab]c");
+  nfa = reToNFA();
+  assert(test(nfa, "c") == false);
+  assert(test(nfa, "ac") == true);
+  assert(test(nfa, "bc") == true);
+  assert(test(nfa, "abc") == false);
+  assert(test(nfa, "bd") == false);
+  assert(test(nfa, "acc") == false);
+
+  initLexer("[A-Za-z]c");
+  nfa = reToNFA();
+  assert(test(nfa, "c") == false);
+  assert(test(nfa, "ac") == true);
+  assert(test(nfa, "bc") == true);
+  assert(test(nfa, "Ac") == true);
+  assert(test(nfa, "Zd") == false);
+  assert(test(nfa, "Zc") == true);
+#endif
+#ifndef TEST
   char *re = argv[1];
   initLexer(re);
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
+#endif
 }
