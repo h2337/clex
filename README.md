@@ -4,6 +4,7 @@
 
 * [Overview](#overview)
 * [Example](#example)
+* [NFA](#nfa)
 
 ## Overview
 
@@ -130,3 +131,47 @@ int main(int argc, char *argv[]) {
   assert(token.lexeme == NULL);
 }
 ```
+
+# NFA
+Automata can be drawn with Graphviz.
+
+```c
+#include "fa.h"
+
+int main(int argc, char *argv) {
+  Node *nfa = NFAFromRe("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
+  NFADraw(nfa);
+}
+```
+
+Above code will output this to stdout:
+
+```dot
+digraph G {
+  1 -> 0 [label="e"];
+  0 -> 2 [label="e"];
+  2 -> 3 [label="a-z"];
+  3 -> 4 [label="e"];
+  4 -> 5 [label="e"];
+  4 -> 1 [label="e"];
+  1 -> 0 [label="e"];
+  1 -> 6 [label="e"];
+  6 -> 7 [label="0-9"];
+  7 -> 4 [label="e"];
+  4 -> 5 [label="e"];
+  4 -> 1 [label="e"];
+  2 -> 3 [label="A-Z"];
+  3 -> 4 [label="e"];
+  2 -> 3 [label="_-_"];
+  3 -> 4 [label="e"];
+  0 -> 5 [label="e"];
+  1 -> 6 [label="e"];
+}
+```
+
+The output can be processed with Graphviz to get the graph image: `dot -Tpng output.dot > output.png`.
+
+Here's what it produces:
+
+<img src="https://github.com/h2337/file-hosting/blob/8479adfb125f56d1d3a9f5a5a0a040f41fefbc42/nfa.png?raw=true">
+
