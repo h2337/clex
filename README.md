@@ -51,7 +51,6 @@ int main(int argc, char *argv[]) {
   registerKind(";", SEMICOL);
   registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
 
-
   initClex("int main(int argc, char *argv[]) {\nreturn 23;\n}");
 
   Token *token = clex();
