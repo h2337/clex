@@ -1,24 +1,37 @@
-#ifndef FA_H
-#define FA_H
+#ifndef CLEX_FA_H
+#define CLEX_FA_H
 
 #include <stdbool.h>
+#include <stdlib.h>
 
-typedef struct Node Node;
+typedef struct clexNode clexNode;
 
-typedef struct Transition {
+typedef struct clexTransition {
   char fromValue;
   char toValue;
-  Node *to;
-} Transition;
+  clexNode *to;
+} clexTransition;
 
-typedef struct Node {
+typedef struct clexNode {
   bool isStart;
   bool isFinish;
-  Transition **transitions;
-} Node;
+  clexTransition **transitions;
+} clexNode;
 
-Node *NFAFromRe(const char *re);
-bool NFATest(Node *nfa, const char *target);
-void NFADraw(Node *nfa);
+typedef struct clexReLexerState {
+  const char *lexerContent;
+  size_t lexerPosition;
+  clexNode *lastBeforeParanEntry;
+  clexNode *beforeParanEntry;
+  clexNode *paranEntry;
+  bool inPipe;
+  bool pipeSeen;
+  bool inBackslash;
+  char **getFinishNodeSeen;
+} clexReLexerState;
+
+clexNode *clexNfaFromRe(const char *re, clexReLexerState *state);
+bool clexNfaTest(clexNode *nfa, const char *target);
+void clexNfaDraw(clexNode *nfa);
 
 #endif
