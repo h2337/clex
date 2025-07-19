@@ -1,8 +1,9 @@
 #ifndef CLEX_H
 #define CLEX_H
 
-#include "fa.h"
 #include <stdbool.h>
+
+#include "fa.h"
 
 #define CLEX_MAX_RULES 1024
 
@@ -24,6 +25,7 @@ typedef struct clexLexer {
 } clexLexer;
 
 clexLexer *clexInit(void);
+void clexLexerDestroy(clexLexer *lexer);
 void clexReset(clexLexer *lexer, const char *content);
 bool clexRegisterKind(clexLexer *lexer, const char *re, int kind);
 void clexDeleteKinds(clexLexer *lexer);

@@ -1,8 +1,9 @@
 #ifdef TEST_CLEX
 
-#include "clex.h"
 #include <assert.h>
 #include <string.h>
+
+#include "clex.h"
 
 typedef enum TokenKind {
   EOF,
@@ -320,8 +321,9 @@ int main(int argc, char *argv[]) {
 
 #ifdef TEST_REGEX
 
-#include "fa.h"
 #include <assert.h>
+
+#include "fa.h"
 
 int main(int argc, char *argv[]) {
   clexNode *nfa = clexNfaFromRe("a", NULL);

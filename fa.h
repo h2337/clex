@@ -33,5 +33,6 @@ typedef struct clexReLexerState {
 clexNode *clexNfaFromRe(const char *re, clexReLexerState *state);
 bool clexNfaTest(clexNode *nfa, const char *target);
 void clexNfaDraw(clexNode *nfa);
+void clexNfaDestroy(clexNode *nfa, char **seen);
 
 #endif

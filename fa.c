@@ -1,4 +1,5 @@
 #include "fa.h"
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,38 +59,38 @@ static Token *makeLexemeToken(TokenKind kind, char lexeme) {
 
 static Token *lex(clexReLexerState *state) {
   switch (state->lexerContent[state->lexerPosition]) {
-  case '\0':
-    return makeToken(EOF);
-  case '(':
-    state->lexerPosition++;
-    return makeLexemeToken(OPARAN, '(');
-  case ')':
-    state->lexerPosition++;
-    return makeLexemeToken(CPARAN, ')');
-  case '[':
-    state->lexerPosition++;
-    return makeLexemeToken(OSBRACKET, '[');
-  case ']':
-    state->lexerPosition++;
-    return makeLexemeToken(CSBRACKET, ']');
-  case '-':
-    state->lexerPosition++;
-    return makeLexemeToken(DASH, '-');
-  case '|':
-    state->lexerPosition++;
-    return makeLexemeToken(PIPE, '|');
-  case '*':
-    state->lexerPosition++;
-    return makeLexemeToken(STAR, '*');
-  case '+':
-    state->lexerPosition++;
-    return makeLexemeToken(PLUS, '+');
-  case '?':
-    state->lexerPosition++;
-    return makeLexemeToken(QUESTION, '?');
-  case '\\':
-    state->lexerPosition++;
-    return makeLexemeToken(BSLASH, '\\');
+    case '\0':
+      return makeToken(EOF);
+    case '(':;
+      state->lexerPosition++;
+      return makeLexemeToken(OPARAN, '(');
+    case ')':
+      state->lexerPosition++;
+      return makeLexemeToken(CPARAN, ')');
+    case '[':
+      state->lexerPosition++;
+      return makeLexemeToken(OSBRACKET, '[');
+    case ']':
+      state->lexerPosition++;
+      return makeLexemeToken(CSBRACKET, ']');
+    case '-':
+      state->lexerPosition++;
+      return makeLexemeToken(DASH, '-');
+    case '|':
+      state->lexerPosition++;
+      return makeLexemeToken(PIPE, '|');
+    case '*':
+      state->lexerPosition++;
+      return makeLexemeToken(STAR, '*');
+    case '+':
+      state->lexerPosition++;
+      return makeLexemeToken(PLUS, '+');
+    case '?':
+      state->lexerPosition++;
+      return makeLexemeToken(QUESTION, '?');
+    case '\\':
+      state->lexerPosition++;
+      return makeLexemeToken(BSLASH, '\\');
   }
   Token *result =
       makeLexemeToken(LITERAL, state->lexerContent[state->lexerPosition]);
@@ -99,15 +100,13 @@ static Token *lex(clexReLexerState *state) {
 
 static Token *peek(clexReLexerState *state) {
   Token *lexed = lex(state);
-  if (lexed->kind != EOF)
-    state->lexerPosition--;
+  if (lexed->kind != EOF) state->lexerPosition--;
   return lexed;
 }
 
 static bool inArray(char **array, char *key) {
   for (int i = 0; i < 1024; i++)
-    if (array[i] && strcmp(array[i], key) == 0)
-      return true;
+    if (array[i] && strcmp(array[i], key) == 0) return true;
   return false;
 }
 
@@ -126,24 +125,51 @@ static char *getFinishNodeKey(clexNode *node) {
 }
 
 static clexNode *getFinishNode(clexNode *node, char **getFinishNodeSeen) {
-  if (!getFinishNodeSeen)
+  if (!getFinishNodeSeen) {
     getFinishNodeSeen = calloc(1024, sizeof(char *));
-  if (node->isFinish)
-    return node;
-  for (int i = 0; i < 100; i++)
-    if (node->transitions[i] != NULL)
-      if (!inArray(getFinishNodeSeen,
-                   getFinishNodeKey(node->transitions[i]->to))) {
-        insertArray(getFinishNodeSeen,
-                    getFinishNodeKey(node->transitions[i]->to));
-        return getFinishNode(node->transitions[i]->to, getFinishNodeSeen);
+    if (node->isFinish) {
+      free(getFinishNodeSeen);
+      return node;
+    }
+    for (int i = 0; i < 100; i++) {
+      if (node->transitions[i] != NULL) {
+        char *key = getFinishNodeKey(node->transitions[i]->to);
+        if (!inArray(getFinishNodeSeen, key)) {
+          insertArray(getFinishNodeSeen, key);
+          clexNode *result =
+              getFinishNode(node->transitions[i]->to, getFinishNodeSeen);
+          if (result) {
+            free(getFinishNodeSeen);
+            return result;
+          }
+        }
+        free(key);
       }
+    }
+    free(getFinishNodeSeen);
+    return NULL;
+  }
+  if (node->isFinish) return node;
+  for (int i = 0; i < 100; i++)
+    if (node->transitions[i] != NULL) {
+      char *key = getFinishNodeKey(node->transitions[i]->to);
+      if (!inArray(getFinishNodeSeen, key)) {
+        insertArray(getFinishNodeSeen, key);
+        clexNode *result =
+            getFinishNode(node->transitions[i]->to, getFinishNodeSeen);
+        if (result) return result;
+      }
+      free(key);
+    }
   return NULL;
 }
 
 clexNode *clexNfaFromRe(const char *re, clexReLexerState *state) {
-  if (!state)
+  bool isOuter = false;
+  if (!state) {
     state = calloc(1, sizeof(clexReLexerState));
+    isOuter = true;
+  }
   if (re) {
     state->lexerContent = re;
     state->lexerPosition = 0;
@@ -167,12 +193,15 @@ clexNode *clexNfaFromRe(const char *re, clexReLexerState *state) {
       last->transitions[0] = makeTransition(token->lexeme, token->lexeme, node);
       last->isFinish = false;
       last = node;
+      free(token);
       continue;
     }
-    if (peek(state)->kind == OPARAN) {
+    Token *peeked = peek(state);
+    if (peeked->kind == OPARAN) {
       state->lastBeforeParanEntry = state->beforeParanEntry;
       state->beforeParanEntry = last;
     }
+    free(peeked);
     if (token->kind == BSLASH) {
       state->inBackslash = true;
     }
@@ -183,6 +212,7 @@ clexNode *clexNfaFromRe(const char *re, clexReLexerState *state) {
       if (state->inPipe) {
         state->inPipe = false;
         state->pipeSeen = true;
+        free(token);
         return entry;
       }
     }
@@ -360,28 +390,48 @@ clexNode *clexNfaFromRe(const char *re, clexReLexerState *state) {
       int index = 0;
       clexNode *node = makeNode(false, true);
       int kind;
-      while ((kind = peek(state)->kind) != CSBRACKET) {
-        if (kind == EOF)
+      Token *lexed;
+      while ((kind = (lexed = peek(state))->kind) != CSBRACKET) {
+        free(lexed);
+        if (kind == EOF) {
+          free(token);
+          if (isOuter) free(state);
           return NULL;
-        char fromValue = lex(state)->lexeme;
-        if (peek(state)->kind == DASH) {
-          lex(state);
-          char toValue = lex(state)->lexeme;
+        }
+        lexed = lex(state);
+        char fromValue = lexed->lexeme;
+        free(lexed);
+        Token *peeked = peek(state);
+        if (peeked->kind == DASH) {
+          free(peek(state));
+          lexed = lex(state);
+          free(lexed);
+          lexed = lex(state);
+          char toValue = lexed->lexeme;
+          free(lexed);
           last->transitions[index++] = makeTransition(fromValue, toValue, node);
         } else {
           last->transitions[index++] =
               makeTransition(fromValue, fromValue, node);
         }
+        free(peeked);
       }
-      lex(state);
-      if (peek(state)->kind == OPARAN) {
+      free(lexed);
+      lexed = lex(state);
+      free(lexed);
+      peeked = peek(state);
+      if (peeked->kind == OPARAN) {
         state->lastBeforeParanEntry = state->beforeParanEntry;
         state->beforeParanEntry = last;
       }
+      free(peeked);
       last->isFinish = false;
       last = node;
     }
+    free(token);
   }
+  free(token);
+  if (isOuter) free(state);
   return entry;
 }
 
@@ -391,22 +441,18 @@ bool clexNfaTest(clexNode *nfa, const char *target) {
       if (nfa->transitions[j]) {
         if (nfa->transitions[j]->fromValue <= target[i] &&
             nfa->transitions[j]->toValue >= target[i]) {
-          if (clexNfaTest(nfa->transitions[j]->to, target + i + 1))
-            return true;
+          if (clexNfaTest(nfa->transitions[j]->to, target + i + 1)) return true;
         } else if (nfa->transitions[j]->fromValue == '\0') {
-          if (clexNfaTest(nfa->transitions[j]->to, target + i))
-            return true;
+          if (clexNfaTest(nfa->transitions[j]->to, target + i)) return true;
         }
       }
     return false;
   }
   for (int j = 0; j < 100; j++) {
     if (nfa->transitions[j] && nfa->transitions[j]->fromValue == '\0')
-      if (clexNfaTest(nfa->transitions[j]->to, ""))
-        return true;
+      if (clexNfaTest(nfa->transitions[j]->to, "")) return true;
   }
-  if (nfa->isFinish)
-    return true;
+  if (nfa->isFinish) return true;
   return false;
 }
 
@@ -426,37 +472,38 @@ static unsigned long getDrawMapping(unsigned long *drawMapping,
       drawMapping[i] = value;
       return i;
     }
+  return -1;
 }
 
 static void drawNode(clexNode *nfa, char **drawSeen,
                      unsigned long *drawMapping) {
-  for (int i = 0; i < 100; i++)
-    if (nfa->transitions[i] &&
-        !inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to,
-                                   nfa->transitions[i]->fromValue,
-                                   nfa->transitions[i]->toValue))) {
-      if (nfa->transitions[i]->fromValue || nfa->transitions[i]->toValue)
-        printf(
-            "  %lu -> %lu [label=\"%c-%c\"];\n",
-            getDrawMapping(drawMapping, (unsigned long)nfa),
-            getDrawMapping(drawMapping, (unsigned long)nfa->transitions[i]->to),
-            nfa->transitions[i]->fromValue ? nfa->transitions[i]->fromValue
-                                           : ' ',
-            nfa->transitions[i]->toValue ? nfa->transitions[i]->toValue : ' ');
-      else
-        printf("  %lu -> %lu [label=\"e\"];\n",
-               getDrawMapping(drawMapping, (unsigned long)nfa),
-               getDrawMapping(drawMapping,
-                              (unsigned long)nfa->transitions[i]->to));
-      if (!inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to,
-                                     nfa->transitions[i]->fromValue,
-                                     nfa->transitions[i]->toValue))) {
-        insertArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to,
-                                      nfa->transitions[i]->fromValue,
-                                      nfa->transitions[i]->toValue));
+  for (int i = 0; i < 100; i++) {
+    if (nfa->transitions[i]) {
+      char *key =
+          drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue,
+                  nfa->transitions[i]->toValue);
+      if (!inArray(drawSeen, key)) {
+        if (nfa->transitions[i]->fromValue || nfa->transitions[i]->toValue)
+          printf("  %lu -> %lu [label=\"%c-%c\"];\n",
+                 getDrawMapping(drawMapping, (unsigned long)nfa),
+                 getDrawMapping(drawMapping,
+                                (unsigned long)nfa->transitions[i]->to),
+                 nfa->transitions[i]->fromValue ? nfa->transitions[i]->fromValue
+                                                : ' ',
+                 nfa->transitions[i]->toValue ? nfa->transitions[i]->toValue
+                                              : ' ');
+        else
+          printf("  %lu -> %lu [label=\"e\"];\n",
+                 getDrawMapping(drawMapping, (unsigned long)nfa),
+                 getDrawMapping(drawMapping,
+                                (unsigned long)nfa->transitions[i]->to));
+        insertArray(drawSeen, key);
         drawNode(nfa->transitions[i]->to, drawSeen, drawMapping);
+      } else {
+        free(key);
       }
     }
+  }
 }
 
 void clexNfaDraw(clexNode *nfa) {
@@ -465,4 +512,26 @@ void clexNfaDraw(clexNode *nfa) {
   printf("digraph G {\n");
   drawNode(nfa, drawSeen, drawMapping);
   printf("}\n");
+  for (int i = 0; i < 1024; i++) free(drawSeen[i]);
+  free(drawSeen);
+  free(drawMapping);
+}
+
+void clexNfaDestroy(clexNode *nfa, char **seen) {
+  bool isOuter = false;
+  if (!seen) {
+    seen = calloc(1024, sizeof(char *));
+    isOuter = true;
+  }
+  if (!nfa || inArray(seen, (char *)nfa)) return;
+  insertArray(seen, (char *)nfa);
+  for (int i = 0; i < 100; i++) {
+    if (nfa->transitions[i]) {
+      clexNfaDestroy(nfa->transitions[i]->to, seen);
+      free(nfa->transitions[i]);
+    }
+  }
+  free(nfa->transitions);
+  free(nfa);
+  if (isOuter) free(seen);
 }
