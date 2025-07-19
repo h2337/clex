@@ -2,19 +2,30 @@
 
 #include "clex.h"
 #include <assert.h>
+#include <string.h>
 
 typedef enum TokenKind {
-  IDENTIFIER,
   AUTO,
   BOOL,
   BREAK,
+  SEMICOL,
+  IDENTIFIER,
 } TokenKind;
 
 int main(int argc, char *argv[]) {
-  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
   registerKind("auto", AUTO);
   registerKind("_Bool", BOOL);
   registerKind("break", BREAK);
+  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
+  registerKind(";", SEMICOL);
+
+  initClex("auto ident1; break;");
+  Token *token = clex();
+
+  assert(token->kind == AUTO);
+  assert(strcmp(token->lexeme, "auto") == 0);
+
+  deleteKinds();
 }
 #endif
 
@@ -24,6 +35,7 @@ int main(int argc, char *argv[]) {
 #include <assert.h>
 
 int main(int argc, char *argv) {
+  // TODO: Move initLexer into reToNFA
   initLexer("a");
   Node *nfa = reToNFA();
   assert(test(nfa, "a") == true);
