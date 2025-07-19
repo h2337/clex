@@ -11,10 +11,10 @@ typedef enum TokenKind {
 } TokenKind;
 
 int main(int argc, char *argv[]) {
+  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
   registerKind("auto", AUTO);
   registerKind("_Bool", BOOL);
   registerKind("break", BREAK);
-  registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
 }
 #endif
 
