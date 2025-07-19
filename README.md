@@ -4,6 +4,7 @@
 
 * [Overview](#overview)
 * [Example](#example)
+* [Automata](#automata)
 
 ## Overview
 
@@ -130,3 +131,43 @@ int main(int argc, char *argv[]) {
   assert(token.lexeme == NULL);
 }
 ```
+
+# Automata
+
+NFA can be drawn with Graphviz.
+
+```c
+#include "fa.h"
+
+int main(int argc, char *argv) {
+  Node *nfa = NFAFromRe("a(bc|de)*f");
+  NFADraw(nfa);
+}
+```
+
+Above code will output this to stdout:
+
+```dot
+digraph G {
+  1 -> 0 [label="a-a"];
+  0 -> 2 [label="e"];
+  2 -> 3 [label="e"];
+  3 -> 4 [label="b-b"];
+  4 -> 5 [label="c-c"];
+  5 -> 6 [label="e"];
+  6 -> 7 [label="e"];
+  7 -> 8 [label="f-f"];
+  6 -> 0 [label="e"];
+  0 -> 9 [label="e"];
+  9 -> 10 [label="d-d"];
+  10 -> 11 [label="e-e"];
+  11 -> 6 [label="e"];
+  2 -> 7 [label="e"];
+}
+```
+
+The output can be processed with Graphviz to get the graph image: `dot -Tpng output.dot > output.png`.
+
+Here's what it produces:
+
+<img src="https://github.com/h2337/file-hosting/blob/e9e584acf349378ea507e088a9639980684d5d68/nfa.png?raw=true">
