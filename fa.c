@@ -55,10 +55,14 @@ typedef struct Token {
 
 char *lexerContent;
 size_t lexerPosition;
+Node *beforeParanEntry = NULL;
+Node *paranEntry = NULL;
 
 void initLexer(char *content) {
   lexerContent = content;
   lexerPosition = 0;
+  beforeParanEntry = NULL;
+  paranEntry = NULL;
 }
 
 Token *makeToken(TokenKind kind) {
@@ -134,9 +138,6 @@ Node *getFinishNode(Node *node) {
   return NULL;
 }
 
-Node *beforeParanEntry = NULL;
-Node *paranEntry = NULL;
-
 Node *reToNFA() {
   Token *token;
   Node *entry = makeNode(true, true);
@@ -181,7 +182,10 @@ Node *reToNFA() {
         last = finish;
       } else {
         Node *pipeEntry = makeNode(beforeParanEntry ? false : true, false);
-        beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->value, pipeEntry);
+        if (beforeParanEntry)
+          beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->value, pipeEntry);
+        else
+          entry = pipeEntry;
         pipeEntry->transitions[0] = makeTransition('\0', paranEntry);
 
         Node *firstFinish = getFinishNode(paranEntry);
@@ -364,6 +368,11 @@ int main(int argc, char *argv[]) {
   assert(test(nfa, "abccf") == false);
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
+
+  initLexer("(bc|de)f");
+  nfa = reToNFA();
+  assert(test(nfa, "bcf") == true);
+  assert(test(nfa, "def") == true);
 #endif
 #ifndef TEST
   char *re = argv[1];
