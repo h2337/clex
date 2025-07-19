@@ -65,6 +65,29 @@ typedef enum TokenKind {
   EQ_OP,
   NE_OP,
   SEMICOL,
+  OCURLYBRACE,
+  CCURLYBRACE,
+  COMMA,
+  COLON,
+  EQUAL,
+  OPARAN,
+  CPARAN,
+  OSQUAREBRACE,
+  CSQUAREBACE,
+  DOT,
+  AMPER,
+  EXCLAMATION,
+  TILDE,
+  MINUS,
+  PLUS,
+  STAR,
+  SLASH,
+  PERCENT,
+  RANGLE,
+  LANGLE,
+  CARET,
+  PIPE,
+  QUESTION,
   IDENTIFIER,
 } TokenKind;
 
@@ -76,8 +99,8 @@ int main(int argc, char *argv[]) {
   registerKind(";", SEMICOL);
 
   initClex("auto ident1; break;");
-  Token *token = clex();
 
+  Token *token = clex();
   assert(token->kind == AUTO);
   assert(strcmp(token->lexeme, "auto") == 0);
 
@@ -146,18 +169,42 @@ int main(int argc, char *argv[]) {
   registerKind("%=", MOD_ASSIGN);
   registerKind("&=", AND_ASSIGN);
   registerKind("^=", XOR_ASSIGN);
-  registerKind("|=", OR_ASSIGN);
+  //registerKind("|=", OR_ASSIGN);
   registerKind(">>", RIGHT_OP);
   registerKind("<<", LEFT_OP);
   registerKind("++", INC_OP);
   registerKind("--", DEC_OP);
   registerKind("->", PTR_OP);
   registerKind("&&", AND_OP);
-  registerKind("||", OR_OP);
+  //registerKind("||", OR_OP);
   registerKind("<=", LE_OP);
   registerKind(">=", GE_OP);
   registerKind("==", EQ_OP);
   registerKind("!=", NE_OP);
+  registerKind(";", SEMICOL);
+  registerKind("{|<%", OCURLYBRACE);
+  registerKind("}|%>", CCURLYBRACE);
+  registerKind(",", COMMA);
+  registerKind(":", COLON);
+  registerKind("=", EQUAL);
+  registerKind("(", OPARAN);
+  registerKind(")", CPARAN);
+  //registerKind("[|<:", OSQUAREBRACE);
+  //registerKind("]|:>", CSQUAREBACE);
+  registerKind(".", DOT);
+  registerKind("&", AMPER);
+  registerKind("!", EXCLAMATION);
+  registerKind("~", TILDE);
+  registerKind("-", MINUS);
+  //registerKind("+", PLUS);
+  //registerKind("*", STAR);
+  registerKind("/", SLASH);
+  registerKind("%", PERCENT);
+  registerKind("<", RANGLE);
+  registerKind(">", LANGLE);
+  registerKind("^", CARET);
+  registerKind("|", PIPE);
+  //registerKind("?", QUESTION);
 }
 #endif
 
