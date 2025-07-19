@@ -73,7 +73,7 @@ typedef enum TokenKind {
   OPARAN,
   CPARAN,
   OSQUAREBRACE,
-  CSQUAREBACE,
+  CSQUAREBRACE,
   DOT,
   AMPER,
   EXCLAMATION,
@@ -164,9 +164,9 @@ int main(int argc, char *argv[]) {
   registerKind("...", ELLIPSIS);
   registerKind(">>=", RIGHT_ASSIGN);
   registerKind("<<=", LEFT_ASSIGN);
-  registerKind("+=", ADD_ASSIGN);
+  registerKind("\\+=", ADD_ASSIGN);
   registerKind("-=", SUB_ASSIGN);
-  registerKind("*=", MUL_ASSIGN);
+  registerKind("\\*=", MUL_ASSIGN);
   registerKind("/=", DIV_ASSIGN);
   registerKind("%=", MOD_ASSIGN);
   registerKind("&=", AND_ASSIGN);
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
   registerKind("\\|=", OR_ASSIGN);
   registerKind(">>", RIGHT_OP);
   registerKind("<<", LEFT_OP);
-  registerKind("++", INC_OP);
+  registerKind("\\+\\+", INC_OP);
   registerKind("--", DEC_OP);
   registerKind("->", PTR_OP);
   registerKind("&&", AND_OP);
@@ -189,10 +189,10 @@ int main(int argc, char *argv[]) {
   registerKind(",", COMMA);
   registerKind(":", COLON);
   registerKind("=", EQUAL);
-  registerKind("(", OPARAN);
-  registerKind(")", CPARAN);
+  registerKind("\\(", OPARAN);
+  registerKind("\\)", CPARAN);
   registerKind("\\[|<:", OSQUAREBRACE);
-  registerKind("\\]|:>", CSQUAREBACE);
+  registerKind("\\]|:>", CSQUAREBRACE);
   registerKind(".", DOT);
   registerKind("&", AMPER);
   registerKind("!", EXCLAMATION);
@@ -205,14 +205,15 @@ int main(int argc, char *argv[]) {
   registerKind("<", RANGLE);
   registerKind(">", LANGLE);
   registerKind("^", CARET);
-  registerKind("|", PIPE);
+  registerKind("\\|", PIPE);
   registerKind("\\?", QUESTION);
   registerKind("L?\"[ -~]*\"", STRINGLITERAL);
   registerKind("0[xX][a-fA-F0-9]+[uU]?[lL]?[lL]?", CONSTANT);
   registerKind("0[0-7]*[uU]?[lL]?[lL]?", CONSTANT);
+  registerKind("[1-9][0-9]*", CONSTANT); // TODO: Remove when []? is fixed
   registerKind("[1-9][0-9]*[uU]?[lL]?[lL]?", CONSTANT);
   registerKind("L?'[ -~]*'", CONSTANT);
-  registerKind("[0-9]+[Ee][+-]?[0-9]+[fFlL]", CONSTANT); // TODO: Dash?
+  registerKind("[0-9]+[Ee][+-]?[0-9]+[fFlL]", CONSTANT);
   registerKind("[0-9]*.[0-9]+[Ee][+-]?[fFlL]", CONSTANT);
   registerKind("[0-9]+.[0-9]*[Ee][+-]?[fFlL]", CONSTANT);
   registerKind("0[xX][a-fA-F0-9]+[Pp][+-]?[0-9]+[fFlL]?", CONSTANT);
@@ -233,6 +234,76 @@ int main(int argc, char *argv[]) {
   fcontent[fsize] = '\0';
   fclose(f);
   */
+
+  initClex("int main(int argc, char *argv[]) {\nreturn 23;\n}");
+
+  token = clex();
+  assert(token->kind == INT);
+  assert(strcmp(token->lexeme, "int") == 0);
+
+  token = clex();
+  assert(token->kind == IDENTIFIER);
+  assert(strcmp(token->lexeme, "main") == 0);
+
+  token = clex();
+  assert(token->kind == OPARAN);
+  assert(strcmp(token->lexeme, "(") == 0);
+
+  token = clex();
+  assert(token->kind == INT);
+  assert(strcmp(token->lexeme, "int") == 0);
+
+  token = clex();
+  assert(token->kind == IDENTIFIER);
+  assert(strcmp(token->lexeme, "argc") == 0);
+
+  token = clex();
+  assert(token->kind == COMMA);
+  assert(strcmp(token->lexeme, ",") == 0);
+
+  token = clex();
+  assert(token->kind == CHAR);
+  assert(strcmp(token->lexeme, "char") == 0);
+
+  token = clex();
+  assert(token->kind == STAR);
+  assert(strcmp(token->lexeme, "*") == 0);
+
+  token = clex();
+  assert(token->kind == IDENTIFIER);
+  assert(strcmp(token->lexeme, "argv") == 0);
+
+  token = clex();
+  assert(token->kind == OSQUAREBRACE);
+  assert(strcmp(token->lexeme, "[") == 0);
+
+  token = clex();
+  assert(token->kind == CSQUAREBRACE);
+  assert(strcmp(token->lexeme, "]") == 0);
+
+  token = clex();
+  assert(token->kind == CPARAN);
+  assert(strcmp(token->lexeme, ")") == 0);
+
+  token = clex();
+  assert(token->kind == OCURLYBRACE);
+  assert(strcmp(token->lexeme, "{") == 0);
+
+  token = clex();
+  assert(token->kind == RETURN);
+  assert(strcmp(token->lexeme, "return") == 0);
+
+  token = clex();
+  assert(token->kind == CONSTANT);
+  assert(strcmp(token->lexeme, "23") == 0);
+
+  token = clex();
+  assert(token->kind == SEMICOL);
+  assert(strcmp(token->lexeme, ";") == 0);
+
+  token = clex();
+  assert(token->kind == CCURLYBRACE);
+  assert(strcmp(token->lexeme, "}") == 0);
 }
 #endif
 
@@ -406,5 +477,9 @@ int main(int argc, char *argv) {
 
   nfa = reToNFA("\\?");
   assert(test(nfa, "?") == true);
+
+  // TODO: Fix
+  //nfa = reToNFA("[1-9][0-9]*[uU]?[lL]?[lL]?");
+  //assert(test(nfa, "23") == true);
 }
 #endif

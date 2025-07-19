@@ -39,10 +39,11 @@ void deleteKinds() {
 }
 
 Token *clex() {
+  while (isspace(clexContent[clexPosition])) clexPosition++;
   size_t start = clexPosition;
-  while (!isspace(clexContent[clexPosition++]) && clexContent[clexPosition - 1] != '\0');
+  while (!isspace(clexContent[++clexPosition]) && clexContent[clexPosition] != '\0');
   char *part = calloc(clexPosition - start, sizeof(char));
-  strncpy(part, clexContent + start, clexPosition - start - 1);
+  strncpy(part, clexContent + start, clexPosition - start);
 
   while (strlen(part)) {
     for (int i = 0; i < 1024; i++) {
@@ -57,9 +58,9 @@ Token *clex() {
       }
     }
     part[strlen(part) - 1] = '\0';
-    while (!isspace(clexContent[clexPosition]))
-      clexPosition--;
     clexPosition--;
+    if (isspace(clexContent[clexPosition]))
+      clexPosition--;
   }
 }
 
