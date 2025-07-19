@@ -10,9 +10,9 @@ typedef struct Rule {
   int kind;
 } Rule;
 
-Rule **rules;
-char *clexContent;
-size_t clexPosition;
+static Rule **rules;
+static char *clexContent;
+static size_t clexPosition;
 
 void initClex(char *content) {
   clexContent = content;

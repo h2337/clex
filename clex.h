@@ -8,7 +8,7 @@ typedef struct Token {
 
 void initClex(char *content);
 void registerKind(char *re, int kind);
-void deleteKinds();
-Token clex();
+void deleteKinds(void);
+Token clex(void);
 
 #endif

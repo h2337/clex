@@ -42,16 +42,16 @@ typedef struct Token {
   char lexeme;
 } Token;
 
-char *lexerContent;
-size_t lexerPosition;
-Node *lastBeforeParanEntry = NULL;
-Node *beforeParanEntry = NULL;
-Node *paranEntry = NULL;
-bool inPipe = false;
-bool pipeSeen = false;
-bool inBackslash = false;
-char **drawSeen = NULL;
-char **getFinishNodeSeen = NULL;
+static char *lexerContent;
+static size_t lexerPosition;
+static Node *lastBeforeParanEntry = NULL;
+static Node *beforeParanEntry = NULL;
+static Node *paranEntry = NULL;
+static bool inPipe = false;
+static bool pipeSeen = false;
+static bool inBackslash = false;
+static char **drawSeen = NULL;
+static char **getFinishNodeSeen = NULL;
 
 void initLexer(char *content) {
   lexerContent = content;
