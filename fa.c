@@ -358,6 +358,17 @@ int main(int argc, char *argv[]) {
   assert(test(nfa, "Zd") == false);
   assert(test(nfa, "Zc") == true);
 
+  initLexer("[A-Za-z]*c");
+  nfa = reToNFA();
+  assert(test(nfa, "AZazc") == true);
+  assert(test(nfa, "AZaz") == false);
+
+  initLexer("[A-Za-z]?c");
+  nfa = reToNFA();
+  assert(test(nfa, "Ac") == true);
+  assert(test(nfa, "c") == true);
+  assert(test(nfa, "A") == false);
+
   initLexer("a(bc|de)f");
   nfa = reToNFA();
   assert(test(nfa, "abcf") == true);
@@ -373,6 +384,19 @@ int main(int argc, char *argv[]) {
   nfa = reToNFA();
   assert(test(nfa, "bcf") == true);
   assert(test(nfa, "def") == true);
+
+  initLexer("a(bc|de)*f");
+  nfa = reToNFA();
+  assert(test(nfa, "abcf") == true);
+  assert(test(nfa, "adef") == true);
+  assert(test(nfa, "abcbcf") == true);
+  assert(test(nfa, "adedef") == true);
+  assert(test(nfa, "af") == false);
+  assert(test(nfa, "abf") == false);
+  assert(test(nfa, "abcdef") == false);
+  assert(test(nfa, "abccf") == false);
+  assert(test(nfa, "bcf") == false);
+  assert(test(nfa, "abc") == false);
 #endif
 #ifndef TEST
   char *re = argv[1];
