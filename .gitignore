@@ -8,3 +8,4 @@ main.exe
 *.exp
 *.lib
 *.gch
+*.dot

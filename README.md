@@ -19,11 +19,50 @@ The maximum number of rules is 1024, but you can change that number in `clex.h`:
 
 ## Build
 
-Simply pass `fa.c`, `fa.h`, `clex.c`, and `clex.h` to your compiler along with your own application that has a `main` function.
+### Using Makefile (Recommended)
 
-Here's how to build & run the tests:
+A Makefile is provided for easy building and testing:
 
-`gcc tests.c fa.c fa.h clex.c clex.h -D TEST_CLEX && ./a.out` (there's also `TEST_REGEX` and `TEST_NFA_DRAW`)
+```bash
+# Show available commands
+make help
+
+# Run all tests
+make test-all
+
+# Run specific tests
+make test-clex   # Test lexer functionality
+make test-regex  # Test regex patterns
+make test-nfa    # Generate NFA graphs
+
+# Quick test check
+make check
+
+# Build the example from this README
+make example
+
+# Build object files for library use
+make lib
+
+# Clean build artifacts
+make clean
+```
+
+### Manual compilation
+
+Simply pass `fa.c`, `fa.h`, `clex.c`, and `clex.h` to your compiler along with your own application that has a `main` function:
+
+```bash
+gcc your_app.c fa.c clex.c -o your_app
+```
+
+### Manual test compilation
+
+```bash
+gcc tests.c fa.c clex.c -D TEST_CLEX && ./a.out
+gcc tests.c fa.c clex.c -D TEST_REGEX && ./a.out
+gcc tests.c fa.c clex.c -D TEST_NFA_DRAW && ./a.out
+```
 
 No output means all tests passed!
 
