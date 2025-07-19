@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 
   initClex("int main(int argc, char *argv[]) {\nreturn 23;\n}");
 
-  token = clex();
+  Token *token = clex();
   assert(token->kind == INT);
   assert(strcmp(token->lexeme, "int") == 0);
 
