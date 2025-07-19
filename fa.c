@@ -249,7 +249,7 @@ Node *reToNFA() {
     }
     if (token->kind == PLUS) {
       Node *finish = getFinishNode(entry);
-      finish->transitions[1] = makeTransition('\0', entry);
+      finish->transitions[1] = makeTransition('\0', beforeParanEntry ? beforeParanEntry : entry);
     }
     if (token->kind == QUESTION) {
       Node *pastEntry = entry;
@@ -463,9 +463,21 @@ int main(int argc, char *argv[]) {
   assert(test(nfa, "adef") == true);
   assert(test(nfa, "abcbcf") == true);
   assert(test(nfa, "adedef") == true);
-  assert(test(nfa, "af") == true);
-  assert(test(nfa, "abf") == false);
   assert(test(nfa, "abcdef") == true);
+  assert(test(nfa, "abf") == false);
+  assert(test(nfa, "abccf") == false);
+  assert(test(nfa, "bcf") == false);
+  assert(test(nfa, "abc") == false);
+
+  initLexer("a(bc|de)+f");
+  nfa = reToNFA();
+  assert(test(nfa, "af") == false);
+  assert(test(nfa, "abcf") == true);
+  assert(test(nfa, "adef") == true);
+  assert(test(nfa, "abcbcf") == true);
+  assert(test(nfa, "adedef") == true);
+  assert(test(nfa, "abcdef") == true);
+  assert(test(nfa, "abf") == false);
   assert(test(nfa, "abccf") == false);
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
