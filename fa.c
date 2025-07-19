@@ -57,12 +57,16 @@ char *lexerContent;
 size_t lexerPosition;
 Node *beforeParanEntry = NULL;
 Node *paranEntry = NULL;
+bool inPipe = false;
+bool pipeSeen = false;
 
 void initLexer(char *content) {
   lexerContent = content;
   lexerPosition = 0;
   beforeParanEntry = NULL;
   paranEntry = NULL;
+  inPipe = false;
+  pipeSeen = false;
 }
 
 Token *makeToken(TokenKind kind) {
@@ -150,8 +154,11 @@ Node *reToNFA() {
       paranEntry = last;
     }
     if (token->kind == CPARAN) {
-      paranEntry = NULL;
-      return entry;
+      if (inPipe) {
+        inPipe = false;
+        pipeSeen = true;
+        return entry;
+      }
     }
     if (token->kind == LITERAL) {
       Node *node = makeNode(false, true);
@@ -160,6 +167,7 @@ Node *reToNFA() {
       last = node;
     }
     if (token->kind == PIPE) {
+      inPipe = true;
       if (!paranEntry) {
         Node *pastEntry = entry;
         pastEntry->isStart = false;
@@ -182,9 +190,10 @@ Node *reToNFA() {
         last = finish;
       } else {
         Node *pipeEntry = makeNode(beforeParanEntry ? false : true, false);
-        if (beforeParanEntry)
+        if (beforeParanEntry) {
           beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->value, pipeEntry);
-        else
+          beforeParanEntry = pipeEntry;
+        } else
           entry = pipeEntry;
         pipeEntry->transitions[0] = makeTransition('\0', paranEntry);
 
@@ -204,20 +213,39 @@ Node *reToNFA() {
       }
     }
     if (token->kind == STAR) {
-      Node *pastEntry = entry;
-      pastEntry->isStart = false;
+      if (!paranEntry) {
+        Node *pastEntry = entry;
+        pastEntry->isStart = false;
 
-      Node *finish = makeNode(false, true);
-      entry = makeNode(true, false);
+        Node *finish = makeNode(false, true);
+        entry = makeNode(true, false);
 
-      entry->transitions[0] = makeTransition('\0', pastEntry);
-      entry->transitions[1] = makeTransition('\0', finish);
-      Node *firstFinish = getFinishNode(pastEntry);
-      firstFinish->isFinish = false;
-      firstFinish->transitions[0] = makeTransition('\0', finish);
-      firstFinish->transitions[1] = makeTransition('\0', pastEntry);
+        entry->transitions[0] = makeTransition('\0', pastEntry);
+        entry->transitions[1] = makeTransition('\0', finish);
+        Node *firstFinish = getFinishNode(pastEntry);
+        firstFinish->isFinish = false;
+        firstFinish->transitions[0] = makeTransition('\0', finish);
+        firstFinish->transitions[1] = makeTransition('\0', pastEntry);
 
-      last = finish;
+        last = finish;
+      } else {
+        Node *starEntry = makeNode(beforeParanEntry ? false : true, false);
+        if (beforeParanEntry)
+          beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->value, starEntry);
+        else
+          entry = starEntry;
+
+        Node *finish = makeNode(false, true);
+
+        starEntry->transitions[0] = makeTransition('\0', paranEntry);
+        starEntry->transitions[1] = makeTransition('\0', finish);
+        Node *firstFinish = getFinishNode(paranEntry);
+        firstFinish->isFinish = false;
+        firstFinish->transitions[0] = makeTransition('\0', finish);
+        firstFinish->transitions[1] = makeTransition('\0', beforeParanEntry && pipeSeen ? beforeParanEntry : starEntry);
+
+        last = finish;
+      }
     }
     if (token->kind == PLUS) {
       Node *finish = getFinishNode(entry);
@@ -279,18 +307,46 @@ bool test(Node *nfa, char *target) {
       }
     return false;
   }
-  if (nfa->transitions[0] && nfa->transitions[0]->value == '\0' && nfa->transitions[0]->to->isFinish)
-    return true;
+  for (int j = 0; j < 100; j++) {
+    if (nfa->transitions[j] && nfa->transitions[j]->value == '\0' && nfa->transitions[j]->to->isFinish)
+      return true;
+  }
   if (nfa->isFinish)
     return true;
   return false;
 }
 
+bool inArray(char **array, char *key) {
+  for (int i = 0; i < 1024; i++)
+    if (array[i] && strcmp(array[i], key) == 0)
+      return true;
+  return false;
+}
+
+void insertArray(char **array, char *key) {
+  for (int i = 0; i < 1024; i++)
+    if (!array[i]) {
+      array[i] = key;
+      return;
+    }
+}
+
+char *key(Node *node1, Node *node2, char value) {
+  char *result = malloc(1024);
+  sprintf(result, "%p%p%c", node1, node2, value);
+  return result;
+}
+
+char **seen;
+
 void drawNFA(Node *nfa) {
   for (int i = 0; i < 100; i++)
     if (nfa->transitions[i]) {
       printf("%d -> %d [label=\"%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->value);
-      drawNFA(nfa->transitions[i]->to);
+      if (!inArray(seen, key(nfa, nfa->transitions[i]->to, nfa->transitions[i]->value))) {
+        insertArray(seen, key(nfa, nfa->transitions[i]->to, nfa->transitions[i]->value));
+        drawNFA(nfa->transitions[i]->to);
+      }
     }
 }
 
@@ -385,15 +441,31 @@ int main(int argc, char *argv[]) {
   assert(test(nfa, "bcf") == true);
   assert(test(nfa, "def") == true);
 
+  initLexer("a(bc)*f");
+  nfa = reToNFA();
+  assert(test(nfa, "af") == true);
+  assert(test(nfa, "abcf") == true);
+  assert(test(nfa, "abcbcf") == true);
+  assert(test(nfa, "abcbf") == false);
+
+  initLexer("(bc)*f");
+  nfa = reToNFA();
+  assert(test(nfa, "f") == true);
+  assert(test(nfa, "bcf") == true);
+  assert(test(nfa, "bcbcf") == true);
+  assert(test(nfa, "bcbf") == false);
+  assert(test(nfa, "bc") == false);
+
   initLexer("a(bc|de)*f");
   nfa = reToNFA();
+  assert(test(nfa, "af") == true);
   assert(test(nfa, "abcf") == true);
   assert(test(nfa, "adef") == true);
   assert(test(nfa, "abcbcf") == true);
   assert(test(nfa, "adedef") == true);
-  assert(test(nfa, "af") == false);
+  assert(test(nfa, "af") == true);
   assert(test(nfa, "abf") == false);
-  assert(test(nfa, "abcdef") == false);
+  assert(test(nfa, "abcdef") == true);
   assert(test(nfa, "abccf") == false);
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
@@ -404,6 +476,7 @@ int main(int argc, char *argv[]) {
   Node *nfa = reToNFA();
   char *target = argv[2];
   printf("%d\n", test(nfa, target));
-  //drawNFA(nfa);
+  seen = calloc(1024, sizeof(char *));
+  drawNFA(nfa);
 #endif
 }
