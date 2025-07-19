@@ -481,7 +481,6 @@ int main(int argc, char *argv) {
   assert(test(nfa, "ua") == true);
 
   nfa = reToNFA("[1-9][0-9]*([uU])?([lL])?([lL])?");
-  drawNFA(nfa);
   assert(test(nfa, "23") == true);
   assert(test(nfa, "23u") == true);
   assert(test(nfa, "23UlL") == true);
