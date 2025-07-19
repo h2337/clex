@@ -6,7 +6,7 @@
 
 #undef EOF
 
-Node *makeNode(bool isStart, bool isFinish) {
+static Node *makeNode(bool isStart, bool isFinish) {
   Node *result = malloc(sizeof(Node));
   result->isStart = isStart;
   result->isFinish = isFinish;
@@ -14,7 +14,7 @@ Node *makeNode(bool isStart, bool isFinish) {
   return result;
 }
 
-Transition *makeTransition(char fromValue, char toValue, Node *to) {
+static Transition *makeTransition(char fromValue, char toValue, Node *to) {
   Transition *result = malloc(sizeof(Transition));
   result->fromValue = fromValue;
   result->toValue = toValue;
@@ -53,7 +53,7 @@ static bool inBackslash = false;
 static char **drawSeen = NULL;
 static char **getFinishNodeSeen = NULL;
 
-void initLexer(const char *content) {
+static void initLexer(const char *content) {
   lexerContent = content;
   lexerPosition = 0;
   lastBeforeParanEntry = NULL;
@@ -65,20 +65,20 @@ void initLexer(const char *content) {
   getFinishNodeSeen = NULL;
 }
 
-Token *makeToken(TokenKind kind) {
+static Token *makeToken(TokenKind kind) {
   Token *result = malloc(sizeof(Token));
   result->kind = kind;
   return result;
 }
 
-Token *makeLexemeToken(TokenKind kind, char lexeme) {
+static Token *makeLexemeToken(TokenKind kind, char lexeme) {
   Token *result = malloc(sizeof(Token));
   result->kind = kind;
   result->lexeme = lexeme;
   return result;
 }
 
-Token *lex() {
+static Token *lex() {
   switch (lexerContent[lexerPosition]) {
     case '\0':
       return makeToken(EOF);
@@ -118,21 +118,21 @@ Token *lex() {
   return result;
 }
 
-Token *peek() {
+static Token *peek() {
   Token *lexed = lex();
   if (lexed->kind != EOF)
     lexerPosition--;
   return lexed;
 }
 
-bool inArray(char **array, char *key) {
+static bool inArray(char **array, char *key) {
   for (int i = 0; i < 1024; i++)
     if (array[i] && strcmp(array[i], key) == 0)
       return true;
   return false;
 }
 
-void insertArray(char **array, char *key) {
+static void insertArray(char **array, char *key) {
   for (int i = 0; i < 1024; i++)
     if (!array[i]) {
       array[i] = key;
@@ -140,13 +140,13 @@ void insertArray(char **array, char *key) {
     }
 }
 
-char *drawKey(Node *node1, Node *node2, char fromValue, char toValue) {
+static char *drawKey(Node *node1, Node *node2, char fromValue, char toValue) {
   char *result = malloc(1024);
   sprintf(result, "%p%p%c%c", node1, node2, fromValue, toValue);
   return result;
 }
 
-char *getFinishNodeKey(Node *node) {
+static char *getFinishNodeKey(Node *node) {
   char *result = malloc(1024);
   sprintf(result, "%p", node);
   return result;
@@ -165,7 +165,7 @@ void NFADraw(Node *nfa) {
     }
 }
 
-Node *getFinishNode(Node *node) {
+static Node *getFinishNode(Node *node) {
   if (!getFinishNodeSeen)
     getFinishNodeSeen = calloc(1024, sizeof(char *));
   if (node->isFinish)
