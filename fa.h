@@ -17,8 +17,8 @@ typedef struct Node {
   Transition **transitions;
 } Node;
 
-Node *reToNFA(const char *re);
-bool test(Node *nfa, const char *target);
-void drawNFA(Node *nfa);
+Node *NFAFromRe(const char *re);
+bool NFATest(Node *nfa, const char *target);
+void NFADraw(Node *nfa);
 
 #endif

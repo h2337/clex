@@ -1,1 +1,9 @@
 a.out
+main.exe
+
+*.o
+*.pdb
+*.obj
+*.ilk
+*.exp
+*.lib
