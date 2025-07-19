@@ -167,6 +167,22 @@ int main(int argc, char *argv) {
   assert(test(nfa, "bcf") == false);
   assert(test(nfa, "abc") == false);
 
+  initLexer("([a-zA-Z_])*");
+  nfa = reToNFA();
+  assert(test(nfa, "valid") == true);
+  assert(test(nfa, "Valid") == true);
+  assert(test(nfa, "_var1") == false);
+  assert(test(nfa, "vv1") == false);
+  assert(test(nfa, "v1") == false);
+
+  initLexer("([a-zA-Z_]|[0-9])*");
+  nfa = reToNFA();
+  assert(test(nfa, "valid") == true);
+  assert(test(nfa, "Valid") == true);
+  assert(test(nfa, "_var1") == true);
+  assert(test(nfa, "vv1") == true);
+  assert(test(nfa, "v1") == true);
+
   initLexer("[a-zA-Z_]([a-zA-Z_]|[0-9])*");
   nfa = reToNFA();
   assert(test(nfa, "valid") == true);
