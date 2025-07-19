@@ -44,6 +44,7 @@ typedef struct Token {
 
 char *lexerContent;
 size_t lexerPosition;
+Node *lastBeforeParanEntry = NULL;
 Node *beforeParanEntry = NULL;
 Node *paranEntry = NULL;
 bool inPipe = false;
@@ -55,6 +56,7 @@ char **getFinishNodeSeen = NULL;
 void initLexer(char *content) {
   lexerContent = content;
   lexerPosition = 0;
+  lastBeforeParanEntry = NULL;
   beforeParanEntry = NULL;
   paranEntry = NULL;
   inPipe = false;
@@ -188,7 +190,6 @@ Node *getFinishNode(Node *node) {
 Node *reToNFA(char *re) {
   if (re) initLexer(re);
   Token *token;
-  Token *beforeLastToken;
   Node *entry = makeNode(true, true);
   Node *last = entry;
   while ((token = lex())->kind != EOF) {
@@ -201,7 +202,8 @@ Node *reToNFA(char *re) {
       last = node;
       continue;
     }
-    if (peek()->kind == OPARAN && beforeLastToken->kind != CPARAN) {
+    if (peek()->kind == OPARAN) {
+      lastBeforeParanEntry = beforeParanEntry;
       beforeParanEntry = last;
     }
     if (token->kind == BSLASH) {
@@ -328,7 +330,11 @@ Node *reToNFA(char *re) {
         last = finish;
       } else {
         Node *questionEntry = makeNode(beforeParanEntry ? false : true, false);
-        if (beforeParanEntry)
+        if (lastBeforeParanEntry) {
+          lastBeforeParanEntry->transitions[0] = makeTransition(lastBeforeParanEntry->transitions[0]->fromValue, lastBeforeParanEntry->transitions[0]->toValue, questionEntry);
+          lastBeforeParanEntry = NULL;
+        }
+        else if (beforeParanEntry)
           beforeParanEntry->transitions[0] = makeTransition(beforeParanEntry->transitions[0]->fromValue, beforeParanEntry->transitions[0]->toValue, questionEntry);
         else
           entry = questionEntry;
@@ -339,7 +345,7 @@ Node *reToNFA(char *re) {
 
         Node *finish = makeNode(false, true);
         firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        questionEntry->transitions[1] = makeTransition('\0', '\0', finish);
+        questionEntry->transitions[1] = makeTransition('\0', '\0', firstFinish);
 
         last = finish;
       }
@@ -361,7 +367,6 @@ Node *reToNFA(char *re) {
       last->isFinish = false;
       last = node;
     }
-    beforeLastToken = token;
   }
   return entry;
 }
