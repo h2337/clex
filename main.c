@@ -5,6 +5,7 @@
 #include <string.h>
 
 typedef enum TokenKind {
+  EOF,
   AUTO,
   BOOL,
   BREAK,

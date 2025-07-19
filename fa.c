@@ -157,7 +157,7 @@ void NFADraw(Node *nfa) {
     drawSeen = calloc(1024, sizeof(char *));
   for (int i = 0; i < 100; i++)
     if (nfa->transitions[i]) {
-      printf("%d -> %d [label=\"%c-%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue);
+      printf("%p -> %p [label=\"%c-%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue);
       if (!inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue))) {
         insertArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue));
         NFADraw(nfa->transitions[i]->to);
