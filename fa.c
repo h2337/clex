@@ -152,7 +152,7 @@ char *getFinishNodeKey(Node *node) {
   return result;
 }
 
-void drawNFA(Node *nfa) {
+void NFADraw(Node *nfa) {
   if (!drawSeen)
     drawSeen = calloc(1024, sizeof(char *));
   for (int i = 0; i < 100; i++)
@@ -160,7 +160,7 @@ void drawNFA(Node *nfa) {
       printf("%d -> %d [label=\"%c-%c\"];\n", nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue);
       if (!inArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue))) {
         insertArray(drawSeen, drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue, nfa->transitions[i]->toValue));
-        drawNFA(nfa->transitions[i]->to);
+        NFADraw(nfa->transitions[i]->to);
       }
     }
 }
@@ -179,7 +179,7 @@ Node *getFinishNode(Node *node) {
   return NULL;
 }
 
-Node *reToNFA(const char *re) {
+Node *NFAFromRe(const char *re) {
   if (re) initLexer(re);
   Token *token;
   Node *entry = makeNode(true, true);
@@ -229,7 +229,7 @@ Node *reToNFA(const char *re) {
         Node *firstFinish = getFinishNode(pastEntry);
         firstFinish->isFinish = false;
 
-        Node *second = reToNFA(NULL);
+        Node *second = NFAFromRe(NULL);
         Node *secondFinish = getFinishNode(second);
         secondFinish->isFinish = false;
         entry->transitions[1] = makeTransition('\0', '\0', second);
@@ -257,7 +257,7 @@ Node *reToNFA(const char *re) {
         Node *firstFinish = getFinishNode(paranEntry);
         firstFinish->isFinish = false;
 
-        Node *second = reToNFA(NULL);
+        Node *second = NFAFromRe(NULL);
         Node *secondFinish = getFinishNode(second);
         secondFinish->isFinish = false;
         pipeEntry->transitions[1] = makeTransition('\0', '\0', second);
@@ -371,15 +371,15 @@ Node *reToNFA(const char *re) {
   return entry;
 }
 
-bool test(Node *nfa, const char *target) {
+bool NFATest(Node *nfa, const char *target) {
   for (size_t i = 0; i < strlen(target); i++) {
     for (int j = 0; j < 100; j++)
       if (nfa->transitions[j]) {
         if (nfa->transitions[j]->fromValue <= target[i] && nfa->transitions[j]->toValue >= target[i]) {
-          if (test(nfa->transitions[j]->to, target + i + 1))
+          if (NFATest(nfa->transitions[j]->to, target + i + 1))
             return true;
         } else if (nfa->transitions[j]->fromValue == '\0') {
-          if (test(nfa->transitions[j]->to, target + i))
+          if (NFATest(nfa->transitions[j]->to, target + i))
             return true;
         }
       }
@@ -387,7 +387,7 @@ bool test(Node *nfa, const char *target) {
   }
   for (int j = 0; j < 100; j++) {
     if (nfa->transitions[j] && nfa->transitions[j]->fromValue == '\0')
-      if (test(nfa->transitions[j]->to, ""))
+      if (NFATest(nfa->transitions[j]->to, ""))
         return true;
   }
   if (nfa->isFinish)
