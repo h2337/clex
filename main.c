@@ -220,6 +220,19 @@ int main(int argc, char *argv[]) {
   registerKind("0[xX][a-fA-F0-9]+.[a-fA-F0-9]+[Pp][+-]?[0-9]+[fFlL]?", CONSTANT);
   registerKind("[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
   // TODO: Add comment // and /* */
+  // TODO: Add #
+
+  /*
+  FILE *f = fopen("./fa.c", "r");
+  fseek(f, 0L, SEEK_END);
+  size_t fsize = ftell(f);
+  rewind(f);
+
+  char *fcontent = malloc(fsize + 1);
+  fread(fcontent, fsize, 1, f);
+  fcontent[fsize] = '\0';
+  fclose(f);
+  */
 }
 #endif
 
