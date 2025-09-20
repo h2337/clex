@@ -98,15 +98,24 @@ typedef enum TokenKind {
 int main(int argc, char *argv[]) {
   clexLexer *lexer = clexInit();
 
+  assert(clexRegisterKind(NULL, "auto", AUTO) == false);
+  assert(clexRegisterKind(lexer, NULL, AUTO) == false);
+  assert(clexRegisterKind(lexer, "[", AUTO) == false);
+
   clexRegisterKind(lexer, "auto", AUTO);
   clexRegisterKind(lexer, "_Bool", BOOL);
   clexRegisterKind(lexer, "break", BREAK);
   clexRegisterKind(lexer, "[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
   clexRegisterKind(lexer, ";", SEMICOL);
 
+  clexReset(lexer, NULL);
+  clexToken token = clex(lexer);
+  assert(token.kind == -1);
+  assert(token.lexeme == NULL);
+
   clexReset(lexer, "auto ident1; break;");
 
-  clexToken token = clex(lexer);
+  token = clex(lexer);
   assert(token.kind == AUTO);
   assert(strcmp(token.lexeme, "auto") == 0);
 

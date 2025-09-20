@@ -9,13 +9,43 @@
 
 ## Overview
 
-clex is a simple lexer generator for C.
+clex is a tiny, battle-tested lexer generator for C. Feed it a list of regular
+expressions and it will hand back tokens one by one from an input string.
 
-With clex you can initialize a lexer with `clexInit()` call, then register a regex pattern to each token type with `clexRegisterKind(lexer, regex, type)` call, pass the source using `clexReset(source)` call, and then lex the next token with `clex(lexer)` call.
+Some highlights:
 
-At the end of the input string `clex(lexer)` returns `(Token){.lexeme = NULL, .kind = -1}`.
+* Simple C API, no code generation phase.
+* Regex syntax supports grouping, alternation, character classes, ranges, and
+  the usual `* + ?` operators.
+* Whitespace between tokens is skipped automatically.
+* Safe failure modes – invalid rules return `false`, and the lexer yields
+  `{.kind = -1, .lexeme = NULL}` on EOF or when no rule matches.
 
-The maximum number of rules is 1024, but you can change that number in `clex.h`: `#define CLEX_MAX_RULES 1024`
+The maximum number of rules is 1024 by default (see `CLEX_MAX_RULES` in
+`clex.h`).
+
+### Core API
+
+```c
+clexLexer *clexInit(void);
+void       clexReset(clexLexer *lexer, const char *content);
+bool       clexRegisterKind(clexLexer *lexer, const char *regex, int kind);
+clexToken  clex(clexLexer *lexer);
+void       clexDeleteKinds(clexLexer *lexer);
+void       clexLexerDestroy(clexLexer *lexer);
+```
+
+Common flow:
+
+1. `clexInit()` to allocate a lexer.
+2. Call `clexRegisterKind()` for each token. It returns `false` when passed a
+   `NULL` lexer/regex, when the regex fails to compile, or when the rule table is
+   full – check this to catch setup issues early.
+3. `clexReset()` with the source buffer (you own the lifetime of the string).
+4. Repeatedly call `clex()` until it returns the EOF sentinel above. Each token
+   owns its `lexeme` buffer; free it when no longer needed.
+5. Tear down with `clexDeleteKinds()` for reuse, or `clexLexerDestroy()` to free
+   everything.
 
 ## Build
 
@@ -65,6 +95,13 @@ gcc tests.c fa.c clex.c -D TEST_NFA_DRAW && ./a.out
 ```
 
 No output means all tests passed!
+
+You can also run the suites individually with the provided Make targets:
+
+```bash
+make test-clex   # Lexer API & integration tests
+make test-regex  # Regex construction & matching tests
+```
 
 ## Example
 
@@ -219,8 +256,8 @@ digraph G {
 }
 ```
 
-The output can be processed with Graphviz to get the graph image: `dot -Tpng output.dot > output.png`.
+The output can be processed with Graphviz to get the graph image:
 
-Here's what it produces:
-
-<img src="https://github.com/h2337/file-hosting/blob/023a3a6142b28735b9c4a10fd2be42cf456b43aa/nfa.png?raw=true">
+```bash
+dot -Tpng output.dot > output.png
+```

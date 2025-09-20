@@ -18,14 +18,12 @@ clexLexer *clexInit(void) {
 void clexLexerDestroy(clexLexer *lexer) {
   if (!lexer) return;
   if (lexer->rules) {
-    char **seen = calloc(1024, sizeof(char *));
     for (int i = 0; i < CLEX_MAX_RULES; i++) {
       if (lexer->rules[i]) {
-        clexNfaDestroy(lexer->rules[i]->nfa, seen);
+        clexNfaDestroy(lexer->rules[i]->nfa, NULL);
         free(lexer->rules[i]);
       }
     }
-    free(seen);
     free(lexer->rules);
   }
   free(lexer);
@@ -37,53 +35,86 @@ void clexReset(clexLexer *lexer, const char *content) {
 }
 
 bool clexRegisterKind(clexLexer *lexer, const char *re, int kind) {
-  if (!lexer->rules) lexer->rules = calloc(CLEX_MAX_RULES, sizeof(clexRule *));
+  if (!lexer || !re) return false;
+
+  if (!lexer->rules) {
+    lexer->rules = calloc(CLEX_MAX_RULES, sizeof(clexRule *));
+    if (!lexer->rules) return false;
+  }
+
   for (int i = 0; i < CLEX_MAX_RULES; i++) {
     if (!lexer->rules[i]) {
       clexRule *rule = malloc(sizeof(clexRule));
+      if (!rule) return false;
       rule->re = re;
       rule->nfa = clexNfaFromRe(re, NULL);
-      if (!rule->nfa) return false;
+      if (!rule->nfa) {
+        free(rule);
+        return false;
+      }
       rule->kind = kind;
       lexer->rules[i] = rule;
-      break;
+      return true;
     }
   }
-  return true;
+
+  return false;
 }
 
 void clexDeleteKinds(clexLexer *lexer) {
   if (lexer->rules) {
-    char **seen = calloc(1024, sizeof(char *));
     for (int i = 0; i < CLEX_MAX_RULES; i++) {
       if (lexer->rules[i]) {
-        clexNfaDestroy(lexer->rules[i]->nfa, seen);
+        clexNfaDestroy(lexer->rules[i]->nfa, NULL);
         free(lexer->rules[i]);
         lexer->rules[i] = NULL;
       }
     }
-    free(seen);
   }
 }
 
 clexToken clex(clexLexer *lexer) {
-  while (isspace(lexer->content[lexer->position])) lexer->position++;
-  size_t start = lexer->position;
-  while (lexer->content[lexer->position] != '\0' &&
-         !isspace(lexer->content[++lexer->position]));
-  char *part = calloc(lexer->position - start + 1, sizeof(char));
-  strncpy(part, lexer->content + start, lexer->position - start);
+  const clexToken eof = {.lexeme = NULL, .kind = -1};
 
-  while (strlen(part)) {
-    for (int i = 0; i < CLEX_MAX_RULES; i++)
-      if (lexer->rules[i])
-        if (clexNfaTest(lexer->rules[i]->nfa, part))
-          return (clexToken){.lexeme = part, .kind = lexer->rules[i]->kind};
-    part[strlen(part) - 1] = '\0';
-    lexer->position--;
-    if (isspace(lexer->content[lexer->position])) lexer->position--;
+  if (!lexer || !lexer->content || !lexer->rules) return eof;
+
+  const char *content = lexer->content;
+  size_t length = strlen(content);
+
+  while (lexer->position < length &&
+         isspace((unsigned char)content[lexer->position]))
+    lexer->position++;
+
+  if (lexer->position >= length) return eof;
+
+  size_t start = lexer->position;
+  size_t end = start;
+  while (content[end] != '\0' && !isspace((unsigned char)content[end])) end++;
+
+  size_t partLength = end - start;
+  if (partLength == 0) {
+    lexer->position = end;
+    return eof;
   }
+
+  char *part = calloc(partLength + 1, sizeof(char));
+  if (!part) return eof;
+  memcpy(part, content + start, partLength);
+
+  size_t activeLength = partLength;
+  while (activeLength > 0) {
+    for (int i = 0; i < CLEX_MAX_RULES; i++) {
+      clexRule *rule = lexer->rules[i];
+      if (rule && clexNfaTest(rule->nfa, part)) {
+        lexer->position = start + activeLength;
+        return (clexToken){.lexeme = part, .kind = rule->kind};
+      }
+    }
+    activeLength--;
+    part[activeLength] = '\0';
+  }
+
   free(part);
-  // EOF token is expected to have a kind -1 and a null string for lexeme
-  return (clexToken){.lexeme = NULL, .kind = -1};
+  lexer->position = end;
+  return eof;
 }

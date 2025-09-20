@@ -118,49 +118,54 @@ static void insertArray(char **array, char *key) {
     }
 }
 
-static char *getFinishNodeKey(clexNode *node) {
-  char *result = malloc(1024);
-  sprintf(result, "%p", node);
-  return result;
+static bool nodeSeen(clexNode **array, clexNode *node) {
+  if (!array) return false;
+  for (int i = 0; i < 1024 && array[i]; i++)
+    if (array[i] == node) return true;
+  return false;
 }
 
-static clexNode *getFinishNode(clexNode *node, char **getFinishNodeSeen) {
+static void insertNode(clexNode **array, clexNode *node) {
+  if (!array) return;
+  for (int i = 0; i < 1024; i++)
+    if (!array[i]) {
+      array[i] = node;
+      return;
+    }
+}
+
+static clexNode *getFinishNode(clexNode *node, clexNode **getFinishNodeSeen) {
+  if (!node) return NULL;
+
+  bool ownsSeen = false;
   if (!getFinishNodeSeen) {
-    getFinishNodeSeen = calloc(1024, sizeof(char *));
-    if (node->isFinish) {
-      free(getFinishNodeSeen);
-      return node;
-    }
-    for (int i = 0; i < 100; i++) {
-      if (node->transitions[i] != NULL) {
-        char *key = getFinishNodeKey(node->transitions[i]->to);
-        if (!inArray(getFinishNodeSeen, key)) {
-          insertArray(getFinishNodeSeen, key);
-          clexNode *result =
-              getFinishNode(node->transitions[i]->to, getFinishNodeSeen);
-          if (result) {
-            free(getFinishNodeSeen);
-            return result;
-          }
-        }
-        free(key);
-      }
-    }
-    free(getFinishNodeSeen);
+    getFinishNodeSeen = calloc(1024, sizeof(clexNode *));
+    ownsSeen = true;
+  }
+
+  if (node->isFinish) {
+    if (ownsSeen) free(getFinishNodeSeen);
+    return node;
+  }
+
+  if (nodeSeen(getFinishNodeSeen, node)) {
+    if (ownsSeen) free(getFinishNodeSeen);
     return NULL;
   }
-  if (node->isFinish) return node;
-  for (int i = 0; i < 100; i++)
-    if (node->transitions[i] != NULL) {
-      char *key = getFinishNodeKey(node->transitions[i]->to);
-      if (!inArray(getFinishNodeSeen, key)) {
-        insertArray(getFinishNodeSeen, key);
-        clexNode *result =
-            getFinishNode(node->transitions[i]->to, getFinishNodeSeen);
-        if (result) return result;
+  insertNode(getFinishNodeSeen, node);
+
+  for (int i = 0; i < 100; i++) {
+    if (node->transitions[i]) {
+      clexNode *result =
+          getFinishNode(node->transitions[i]->to, getFinishNodeSeen);
+      if (result) {
+        if (ownsSeen) free(getFinishNodeSeen);
+        return result;
       }
-      free(key);
     }
+  }
+
+  if (ownsSeen) free(getFinishNodeSeen);
   return NULL;
 }
 
@@ -517,14 +522,17 @@ void clexNfaDraw(clexNode *nfa) {
   free(drawMapping);
 }
 
-void clexNfaDestroy(clexNode *nfa, char **seen) {
+void clexNfaDestroy(clexNode *nfa, clexNode **seen) {
   bool isOuter = false;
   if (!seen) {
-    seen = calloc(1024, sizeof(char *));
+    seen = calloc(1024, sizeof(clexNode *));
     isOuter = true;
   }
-  if (!nfa || inArray(seen, (char *)nfa)) return;
-  insertArray(seen, (char *)nfa);
+  if (!nfa || nodeSeen(seen, nfa)) {
+    if (isOuter) free(seen);
+    return;
+  }
+  insertNode(seen, nfa);
   for (int i = 0; i < 100; i++) {
     if (nfa->transitions[i]) {
       clexNfaDestroy(nfa->transitions[i]->to, seen);

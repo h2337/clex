@@ -27,12 +27,12 @@ typedef struct clexReLexerState {
   bool inPipe;
   bool pipeSeen;
   bool inBackslash;
-  char **getFinishNodeSeen;
+  clexNode **getFinishNodeSeen;
 } clexReLexerState;
 
 clexNode *clexNfaFromRe(const char *re, clexReLexerState *state);
 bool clexNfaTest(clexNode *nfa, const char *target);
 void clexNfaDraw(clexNode *nfa);
-void clexNfaDestroy(clexNode *nfa, char **seen);
+void clexNfaDestroy(clexNode *nfa, clexNode **seen);
 
 #endif
