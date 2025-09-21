@@ -127,7 +127,7 @@ typedef enum TokenKind {
   IDENTIFIER,
 } TokenKind;
 
-int main(int argc, char *argv[]) {
+int main() {
   clexLexer *lexer = clexInit();
 
   clexRegisterKind(lexer, "int", INT);
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 
   clexReset(lexer, "int main(int argc, char *argv[]) {\nreturn 23;\n}");
 
-  Token token = clex(lexer);
+  clexToken token = clex(lexer);
   assert(token.kind == INT);
   assert(strcmp(token.lexeme, "int") == 0);
 

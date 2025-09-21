@@ -1,5 +1,8 @@
 a.out
 main.exe
+example
+
+example.c
 
 *.o
 *.pdb

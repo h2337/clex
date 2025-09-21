@@ -89,7 +89,7 @@ example.c:
 	@echo '' >> example.c
 	@sed -n '/^typedef enum TokenKind {/,/^}/p' README.md >> example.c
 	@echo '' >> example.c
-	@sed -n '/^int main(int argc, char \*argv\[\]) {/,/^}/p' README.md >> example.c
+	@sed -n '/^int main() {/,/^}/p' README.md >> example.c
 
 # Debug builds
 .PHONY: debug
