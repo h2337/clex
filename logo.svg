@@ -25,5 +25,5 @@
         text-anchor="middle" 
         fill="url(#darkGradient)"
         filter="url(#glow)"
-        letter-spacing="3">clex</text>
+        letter-spacing="2">clex</text>
 </svg>
