@@ -1,5 +1,5 @@
 # Makefile for clex - A simple lexer generator for C
-CC = gcc
+CC = cc
 CFLAGS = -Wall -Wextra -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 TEST_FLAGS =
@@ -27,16 +27,24 @@ help:
 	@echo "  make test-regex  - Run regex tests"
 	@echo "  make test-nfa    - Run NFA drawing test"
 	@echo "  make example     - Build the example from README"
-	@echo "  make lib         - Build object files for library use"
+	@echo "  make lib         - Build shared library for library use"
+	@echo "  make staticlib   - Build static library for library use"
 	@echo "  make clean       - Remove all build artifacts"
 	@echo "  make check       - Run all tests and verify no output"
 
 # Build object files for library use
-.PHONY: lib
-lib: $(OBJECTS)
-
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+libclex.so: $(OBJECTS) $(SOURCES) $(HEADERS)
+	$(CC) $(OBJECTS) -shared -fPIC -o libclex.so
+
+lib: libclex.so
+
+libclex.a:
+	ar rcs libclex.a $(OBJECTS)
+
+staticlib: libclex.a $(OBJECTS) $(SOURCES) $(HEADERS)
 
 # Test targets
 .PHONY: test-all
@@ -93,6 +101,7 @@ example.c:
 
 # Debug builds
 .PHONY: debug
+debug: clean
 debug: CFLAGS = $(DEBUG_FLAGS)
 debug: lib
 

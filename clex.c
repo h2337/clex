@@ -12,6 +12,8 @@ clexLexer *clexInit(void) {
   lexer->rules = NULL;
   lexer->content = NULL;
   lexer->position = 0;
+  lexer->linen = 0;
+  lexer->linepos = 0;
   return lexer;
 }
 
@@ -74,16 +76,29 @@ void clexDeleteKinds(clexLexer *lexer) {
 }
 
 clexToken clex(clexLexer *lexer) {
-  const clexToken eof = {.lexeme = NULL, .kind = -1};
+  const clexToken eof = {.lexeme = NULL, .kind = -1, .start = -1};
 
   if (!lexer || !lexer->content || !lexer->rules) return eof;
 
   const char *content = lexer->content;
   size_t length = strlen(content);
 
+  int distance_from_nline = lexer->linepos;
+
   while (lexer->position < length &&
-         isspace((unsigned char)content[lexer->position]))
+         isspace((unsigned char)content[lexer->position])) {
+
+    char c = *(lexer->content+lexer->position);
+
+    if (c == '\n') {
+      lexer->linen++;
+      distance_from_nline = 0;
+    }
+    else {
+      distance_from_nline++;
+    }
     lexer->position++;
+  }
 
   if (lexer->position >= length) return eof;
 
@@ -107,7 +122,10 @@ clexToken clex(clexLexer *lexer) {
       clexRule *rule = lexer->rules[i];
       if (rule && clexNfaTest(rule->nfa, part)) {
         lexer->position = start + activeLength;
-        return (clexToken){.lexeme = part, .kind = rule->kind};
+        lexer->linepos = distance_from_nline + activeLength;
+
+        return (clexToken){.lexeme = part, .kind = rule->kind, .start = start, .linen = lexer->linen, .linepos = distance_from_nline };
+
       }
     }
     activeLength--;

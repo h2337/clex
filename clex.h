@@ -2,6 +2,7 @@
 #define CLEX_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "fa.h"
 
@@ -16,12 +17,17 @@ typedef struct clexRule {
 typedef struct clexToken {
   int kind;
   char *lexeme;
+  size_t start;
+  size_t linen;
+  size_t linepos;
 } clexToken;
 
 typedef struct clexLexer {
   clexRule **rules;
   const char *content;
   size_t position;
+  size_t linen;
+  size_t linepos;
 } clexLexer;
 
 clexLexer *clexInit(void);
