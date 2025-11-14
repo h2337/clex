@@ -12,6 +12,8 @@ clexLexer *clexInit(void) {
   lexer->rules = NULL;
   lexer->content = NULL;
   lexer->position = 0;
+  lexer->linen = 0;
+  lexer->linepos = 0;
   return lexer;
 }
 
