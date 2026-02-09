@@ -595,7 +595,10 @@ int main(void) {
   longClassRe[151] = ']';
   longClassRe[152] = '\0';
   nfa = clexNfaFromRe(longClassRe, NULL);
-  assert(nfa == 0);
+  assert(nfa != 0);
+  assert(clexNfaTest(nfa, "a") == true);
+  assert(clexNfaTest(nfa, "b") == false);
+  clexNfaDestroy(nfa, NULL);
 
   size_t longLen = 1100;
   const char* suffix = "(bc)*";

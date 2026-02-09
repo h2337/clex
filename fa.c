@@ -12,12 +12,10 @@ static clexNode* makeNode(bool isStart, bool isFinish) {
   if (!result) return NULL;
   result->isStart = isStart;
   result->isFinish = isFinish;
-  result->transitions = calloc(100, sizeof(clexTransition*));
+  result->transitions = NULL;
+  result->transitionCount = 0;
+  result->transitionCapacity = 0;
   result->compiled = NULL;
-  if (!result->transitions) {
-    free(result);
-    return NULL;
-  }
   return result;
 }
 
@@ -29,6 +27,61 @@ static clexTransition* makeTransition(char fromValue, char toValue,
   result->toValue = toValue;
   result->to = to;
   return result;
+}
+
+static bool ensureNodeTransitionCapacity(clexNode* node, size_t required) {
+  if (!node) return false;
+  if (node->transitionCapacity >= required) return true;
+
+  size_t newCapacity = node->transitionCapacity ? node->transitionCapacity : 4;
+  while (newCapacity < required) {
+    if (newCapacity > (size_t)-1 / 2) {
+      newCapacity = required;
+      break;
+    }
+    newCapacity *= 2;
+  }
+
+  clexTransition** resized =
+      realloc(node->transitions, newCapacity * sizeof(clexTransition*));
+  if (!resized) return false;
+  memset(resized + node->transitionCapacity, 0,
+         (newCapacity - node->transitionCapacity) * sizeof(clexTransition*));
+  node->transitions = resized;
+  node->transitionCapacity = newCapacity;
+  return true;
+}
+
+static bool nodeSetTransition(clexNode* node, size_t index,
+                              clexTransition* transition) {
+  if (!node || !transition) return false;
+  if (!ensureNodeTransitionCapacity(node, index + 1)) return false;
+
+  if (node->transitions[index] && node->transitions[index] != transition)
+    free(node->transitions[index]);
+  node->transitions[index] = transition;
+  if (node->transitionCount < index + 1) node->transitionCount = index + 1;
+  return true;
+}
+
+static bool nodeSetTransitionValues(clexNode* node, size_t index,
+                                    char fromValue, char toValue,
+                                    clexNode* to) {
+  clexTransition* transition = makeTransition(fromValue, toValue, to);
+  if (!transition) return false;
+  if (!nodeSetTransition(node, index, transition)) {
+    free(transition);
+    return false;
+  }
+  return true;
+}
+
+static bool nodeRepointTransition(clexNode* node, size_t index, clexNode* to) {
+  if (!node || index >= node->transitionCount || !node->transitions[index])
+    return false;
+  clexTransition* current = node->transitions[index];
+  return nodeSetTransitionValues(node, index, current->fromValue,
+                                 current->toValue, to);
 }
 
 typedef enum TokenKind {
@@ -180,7 +233,7 @@ typedef struct clexCompiledTransition {
 
 typedef struct clexCompiledNode {
   bool isFinish;
-  clexCompiledTransition transitions[100];
+  clexCompiledTransition* transitions;
   size_t transitionCount;
 } clexCompiledNode;
 
@@ -195,6 +248,10 @@ struct clexCompiledNfa {
 
 static void compiledNfaFree(clexCompiledNfa* compiled) {
   if (!compiled) return;
+  if (compiled->nodes) {
+    for (size_t i = 0; i < compiled->nodeCount; i++)
+      free(compiled->nodes[i].transitions);
+  }
   free(compiled->nodes);
   free(compiled->activeStates);
   free(compiled->seedStates);
@@ -214,13 +271,27 @@ static bool collectReachableNodes(clexNode* start, NodeVec* nodes) {
 
   for (size_t i = 0; i < nodes->size; i++) {
     clexNode* node = nodes->items[i];
-    for (int j = 0; j < 100; j++) {
+    for (size_t j = 0; j < node->transitionCount; j++) {
       if (!node->transitions[j] || !node->transitions[j]->to) continue;
       if (nodeVecContains(nodes, node->transitions[j]->to)) continue;
       if (!nodeVecPush(nodes, node->transitions[j]->to)) return false;
     }
   }
   return true;
+}
+
+static size_t nodeTransitionCount(const clexNode* node) {
+  if (!node) return 0;
+  size_t count = 0;
+  for (size_t i = 0; i < node->transitionCount; i++)
+    if (node->transitions[i]) count++;
+  return count;
+}
+
+static void freeCompiledNodesArray(clexCompiledNode* nodes, size_t nodeCount) {
+  if (!nodes) return;
+  for (size_t i = 0; i < nodeCount; i++) free(nodes[i].transitions);
+  free(nodes);
 }
 
 static bool buildCompiledNfa(clexNode* start, clexCompiledNfa* outCompiled) {
@@ -243,21 +314,33 @@ static bool buildCompiledNfa(clexNode* start, clexCompiledNfa* outCompiled) {
     clexNode* node = nodes.items[i];
     compiledNodes[i].isFinish = node->isFinish;
 
-    for (int j = 0; j < 100; j++) {
+    compiledNodes[i].transitionCount = nodeTransitionCount(node);
+    if (compiledNodes[i].transitionCount == 0) continue;
+
+    compiledNodes[i].transitions = calloc(compiledNodes[i].transitionCount,
+                                          sizeof(clexCompiledTransition));
+    if (!compiledNodes[i].transitions) {
+      freeCompiledNodesArray(compiledNodes, nodes.size);
+      nodeVecFree(&nodes);
+      return false;
+    }
+
+    size_t transitionIndex = 0;
+    for (size_t j = 0; j < node->transitionCount; j++) {
       if (!node->transitions[j]) continue;
       size_t toIndex = 0;
       if (!nodeVecIndexOf(&nodes, node->transitions[j]->to, &toIndex)) {
-        free(compiledNodes);
+        freeCompiledNodesArray(compiledNodes, nodes.size);
         nodeVecFree(&nodes);
         return false;
       }
 
-      size_t transitionIndex = compiledNodes[i].transitionCount++;
       compiledNodes[i].transitions[transitionIndex].fromValue =
           node->transitions[j]->fromValue;
       compiledNodes[i].transitions[transitionIndex].toValue =
           node->transitions[j]->toValue;
       compiledNodes[i].transitions[transitionIndex].toIndex = toIndex;
+      transitionIndex++;
     }
   }
 
@@ -362,7 +445,7 @@ static clexNode* getFinishNodeInternal(clexNode* node, NodeVec* seen) {
   if (nodeVecContains(seen, node)) return NULL;
   if (!nodeVecPush(seen, node)) return NULL;
 
-  for (int i = 0; i < 100; i++) {
+  for (size_t i = 0; i < node->transitionCount; i++) {
     if (!node->transitions[i]) continue;
     clexNode* result = getFinishNodeInternal(node->transitions[i]->to, seen);
     if (result) return result;
@@ -498,7 +581,7 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
         if (isOuter) free(state);
         return NULL;
       }
-      last->transitions[0] = makeTransition(token->lexeme, token->lexeme, node);
+      nodeSetTransitionValues(last, 0, token->lexeme, token->lexeme, node);
       last->isFinish = false;
       last = node;
       free(token);
@@ -538,7 +621,7 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
         if (isOuter) free(state);
         return NULL;
       }
-      last->transitions[0] = makeTransition(token->lexeme, token->lexeme, node);
+      nodeSetTransitionValues(last, 0, token->lexeme, token->lexeme, node);
       last->isFinish = false;
       last = node;
     }
@@ -556,7 +639,7 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
 
-        entry->transitions[0] = makeTransition('\0', '\0', pastEntry);
+        nodeSetTransitionValues(entry, 0, '\0', '\0', pastEntry);
         clexNode* firstFinish = getFinishNode(pastEntry);
         if (!firstFinish) {
           free(token);
@@ -575,7 +658,7 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
         secondFinish->isFinish = false;
-        entry->transitions[1] = makeTransition('\0', '\0', second);
+        nodeSetTransitionValues(entry, 1, '\0', '\0', second);
 
         clexNode* finish = makeNode(false, true);
         if (!finish) {
@@ -584,31 +667,26 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           if (isOuter) free(state);
           return NULL;
         }
-        firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        secondFinish->transitions[0] = makeTransition('\0', '\0', finish);
+        nodeSetTransitionValues(firstFinish, 0, '\0', '\0', finish);
+        nodeSetTransitionValues(secondFinish, 0, '\0', '\0', finish);
 
         last = finish;
       } else {
         clexNode* pipeEntry =
             makeNode(state->beforeParanEntry ? false : true, false);
         if (state->lastBeforeParanEntry) {
-          state->lastBeforeParanEntry->transitions[0] = makeTransition(
-              state->lastBeforeParanEntry->transitions[0]->fromValue,
-              state->lastBeforeParanEntry->transitions[0]->toValue, pipeEntry);
+          nodeRepointTransition(state->lastBeforeParanEntry, 0, pipeEntry);
           state->lastBeforeParanEntry = NULL;
         } else if (state->beforeParanEntry) {
-          for (int i = 0; i < 100; i++)
+          for (size_t i = 0; i < state->beforeParanEntry->transitionCount; i++)
             if (state->beforeParanEntry->transitions[i])
-              state->beforeParanEntry->transitions[i] = makeTransition(
-                  state->beforeParanEntry->transitions[i]->fromValue,
-                  state->beforeParanEntry->transitions[i]->toValue, pipeEntry);
+              nodeRepointTransition(state->beforeParanEntry, i, pipeEntry);
           state->beforeParanEntry = pipeEntry;
         } else {
           entry = pipeEntry;
           state->beforeParanEntry = entry;
         }
-        pipeEntry->transitions[0] =
-            makeTransition('\0', '\0', state->paranEntry);
+        nodeSetTransitionValues(pipeEntry, 0, '\0', '\0', state->paranEntry);
 
         clexNode* firstFinish = getFinishNode(state->paranEntry);
         if (!firstFinish) {
@@ -628,7 +706,7 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
         secondFinish->isFinish = false;
-        pipeEntry->transitions[1] = makeTransition('\0', '\0', second);
+        nodeSetTransitionValues(pipeEntry, 1, '\0', '\0', second);
 
         clexNode* finish = makeNode(false, true);
         if (!finish) {
@@ -637,8 +715,8 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           if (isOuter) free(state);
           return NULL;
         }
-        firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        secondFinish->transitions[0] = makeTransition('\0', '\0', finish);
+        nodeSetTransitionValues(firstFinish, 0, '\0', '\0', finish);
+        nodeSetTransitionValues(secondFinish, 0, '\0', '\0', finish);
 
         last = finish;
       }
@@ -659,8 +737,8 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
 
-        entry->transitions[0] = makeTransition('\0', '\0', pastEntry);
-        entry->transitions[1] = makeTransition('\0', '\0', finish);
+        nodeSetTransitionValues(entry, 0, '\0', '\0', pastEntry);
+        nodeSetTransitionValues(entry, 1, '\0', '\0', finish);
         clexNode* firstFinish = getFinishNode(pastEntry);
         if (!firstFinish) {
           free(token);
@@ -669,22 +747,18 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
         firstFinish->isFinish = false;
-        firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        firstFinish->transitions[1] = makeTransition('\0', '\0', pastEntry);
+        nodeSetTransitionValues(firstFinish, 0, '\0', '\0', finish);
+        nodeSetTransitionValues(firstFinish, 1, '\0', '\0', pastEntry);
 
         last = finish;
       } else {
         clexNode* starEntry =
             makeNode(state->beforeParanEntry ? false : true, false);
         if (state->lastBeforeParanEntry) {
-          state->lastBeforeParanEntry->transitions[0] = makeTransition(
-              state->lastBeforeParanEntry->transitions[0]->fromValue,
-              state->lastBeforeParanEntry->transitions[0]->toValue, starEntry);
+          nodeRepointTransition(state->lastBeforeParanEntry, 0, starEntry);
           state->lastBeforeParanEntry = NULL;
         } else if (state->beforeParanEntry)
-          state->beforeParanEntry->transitions[0] = makeTransition(
-              state->beforeParanEntry->transitions[0]->fromValue,
-              state->beforeParanEntry->transitions[0]->toValue, starEntry);
+          nodeRepointTransition(state->beforeParanEntry, 0, starEntry);
         else
           entry = starEntry;
 
@@ -696,9 +770,8 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
 
-        starEntry->transitions[0] =
-            makeTransition('\0', '\0', state->paranEntry);
-        starEntry->transitions[1] = makeTransition('\0', '\0', finish);
+        nodeSetTransitionValues(starEntry, 0, '\0', '\0', state->paranEntry);
+        nodeSetTransitionValues(starEntry, 1, '\0', '\0', finish);
         clexNode* firstFinish = getFinishNode(state->paranEntry);
         if (!firstFinish) {
           free(token);
@@ -707,11 +780,11 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
         firstFinish->isFinish = false;
-        firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        firstFinish->transitions[1] = makeTransition(
-            '\0', '\0',
-            state->beforeParanEntry && state->pipeSeen ? state->beforeParanEntry
-                                                       : starEntry);
+        nodeSetTransitionValues(firstFinish, 0, '\0', '\0', finish);
+        nodeSetTransitionValues(firstFinish, 1, '\0', '\0',
+                                state->beforeParanEntry && state->pipeSeen
+                                    ? state->beforeParanEntry
+                                    : starEntry);
 
         last = finish;
       }
@@ -724,8 +797,8 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
         if (isOuter) free(state);
         return NULL;
       }
-      finish->transitions[1] = makeTransition(
-          '\0', '\0',
+      nodeSetTransitionValues(
+          finish, 1, '\0', '\0',
           state->beforeParanEntry ? state->beforeParanEntry : entry);
     }
     if (token->kind == QUESTION) {
@@ -741,7 +814,7 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           return NULL;
         }
 
-        entry->transitions[0] = makeTransition('\0', '\0', pastEntry);
+        nodeSetTransitionValues(entry, 0, '\0', '\0', pastEntry);
         clexNode* firstFinish = getFinishNode(pastEntry);
         if (!firstFinish) {
           free(token);
@@ -758,28 +831,23 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           if (isOuter) free(state);
           return NULL;
         }
-        firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        entry->transitions[1] = makeTransition('\0', '\0', finish);
+        nodeSetTransitionValues(firstFinish, 0, '\0', '\0', finish);
+        nodeSetTransitionValues(entry, 1, '\0', '\0', finish);
 
         last = finish;
       } else {
         clexNode* questionEntry =
             makeNode(state->beforeParanEntry ? false : true, false);
         if (state->lastBeforeParanEntry) {
-          state->lastBeforeParanEntry->transitions[0] = makeTransition(
-              state->lastBeforeParanEntry->transitions[0]->fromValue,
-              state->lastBeforeParanEntry->transitions[0]->toValue,
-              questionEntry);
+          nodeRepointTransition(state->lastBeforeParanEntry, 0, questionEntry);
           state->lastBeforeParanEntry = NULL;
         } else if (state->beforeParanEntry)
-          state->beforeParanEntry->transitions[0] = makeTransition(
-              state->beforeParanEntry->transitions[0]->fromValue,
-              state->beforeParanEntry->transitions[0]->toValue, questionEntry);
+          nodeRepointTransition(state->beforeParanEntry, 0, questionEntry);
         else
           entry = questionEntry;
 
-        questionEntry->transitions[0] =
-            makeTransition('\0', '\0', state->paranEntry);
+        nodeSetTransitionValues(questionEntry, 0, '\0', '\0',
+                                state->paranEntry);
         clexNode* firstFinish = getFinishNode(state->paranEntry);
         if (!firstFinish) {
           free(token);
@@ -796,14 +864,14 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           if (isOuter) free(state);
           return NULL;
         }
-        firstFinish->transitions[0] = makeTransition('\0', '\0', finish);
-        questionEntry->transitions[1] = makeTransition('\0', '\0', firstFinish);
+        nodeSetTransitionValues(firstFinish, 0, '\0', '\0', finish);
+        nodeSetTransitionValues(questionEntry, 1, '\0', '\0', firstFinish);
 
         last = finish;
       }
     }
     if (token->kind == OSBRACKET) {
-      int index = 0;
+      size_t index = 0;
       clexNode* node = makeNode(false, true);
       if (!node) {
         free(token);
@@ -868,24 +936,9 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
           }
           char toValue = lexed->lexeme;
           free(lexed);
-          if (index >= 100) {
-            free(peeked);
-            free(token);
-            clexNfaDestroy(entry, NULL);
-            if (isOuter) free(state);
-            return NULL;
-          }
-          last->transitions[index++] = makeTransition(fromValue, toValue, node);
+          nodeSetTransitionValues(last, index++, fromValue, toValue, node);
         } else {
-          if (index >= 100) {
-            free(peeked);
-            free(token);
-            clexNfaDestroy(entry, NULL);
-            if (isOuter) free(state);
-            return NULL;
-          }
-          last->transitions[index++] =
-              makeTransition(fromValue, fromValue, node);
+          nodeSetTransitionValues(last, index++, fromValue, fromValue, node);
         }
         free(peeked);
       }
@@ -962,7 +1015,7 @@ static unsigned long getDrawMapping(unsigned long* drawMapping,
 
 static void drawNode(clexNode* nfa, char** drawSeen,
                      unsigned long* drawMapping) {
-  for (int i = 0; i < 100; i++) {
+  for (size_t i = 0; i < nfa->transitionCount; i++) {
     if (nfa->transitions[i]) {
       char* key =
           drawKey(nfa, nfa->transitions[i]->to, nfa->transitions[i]->fromValue,
@@ -1006,7 +1059,7 @@ static void clexNfaDestroyInternal(clexNode* nfa, NodeVec* seen) {
   if (!nfa || nodeVecContains(seen, nfa)) return;
   if (!nodeVecPush(seen, nfa)) return;
 
-  for (int i = 0; i < 100; i++) {
+  for (size_t i = 0; i < nfa->transitionCount; i++) {
     if (!nfa->transitions[i]) continue;
     clexNfaDestroyInternal(nfa->transitions[i]->to, seen);
     free(nfa->transitions[i]);

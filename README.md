@@ -17,6 +17,8 @@ Some highlights:
 * Simple C API, no code generation phase.
 * Regex syntax supports grouping, alternation, character classes, ranges, and
   the usual `* + ?` operators.
+* NFA internals use dynamically sized transition storage, so complex patterns
+  and large character classes are not capped by fixed per-node slots.
 * Whitespace between tokens is skipped automatically.
 * Typed status codes (`clexStatus`) instead of bool/sentinel error signaling.
 * Structured lexer errors with exact source position, offending lexeme, and

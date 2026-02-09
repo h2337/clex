@@ -17,6 +17,8 @@ typedef struct clexNode {
   bool isStart;
   bool isFinish;
   clexTransition** transitions;
+  size_t transitionCount;
+  size_t transitionCapacity;
   clexCompiledNfa* compiled;
 } clexNode;
 
