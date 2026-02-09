@@ -18,9 +18,10 @@ Some highlights:
 * Regex syntax supports grouping, alternation, character classes, ranges, and
   the usual `* + ?` operators.
 * Whitespace between tokens is skipped automatically.
-* Safe failure modes – invalid rules return `false`, EOF yields
-  `{.kind = CLEX_TOKEN_EOF, .lexeme = NULL}`, and lexical failures yield
-  `{.kind = CLEX_TOKEN_ERROR, .lexeme = <unmatched text>}`.
+* Typed status codes (`clexStatus`) instead of bool/sentinel error signaling.
+* Structured lexer errors with exact source position, offending lexeme, and
+  expected token kinds (`clexError`).
+* Every token includes a source span with byte offset + line/column.
 
 The maximum number of rules is 1024 by default (see `CLEX_MAX_RULES` in
 `clex.h`).
@@ -28,10 +29,24 @@ The maximum number of rules is 1024 by default (see `CLEX_MAX_RULES` in
 ### Core API
 
 ```c
+typedef enum clexStatus {
+  CLEX_STATUS_OK,
+  CLEX_STATUS_EOF,
+  CLEX_STATUS_INVALID_ARGUMENT,
+  CLEX_STATUS_OUT_OF_MEMORY,
+  CLEX_STATUS_REGEX_ERROR,
+  CLEX_STATUS_RULE_LIMIT_REACHED,
+  CLEX_STATUS_NO_RULES,
+  CLEX_STATUS_LEXICAL_ERROR
+} clexStatus;
+
 clexLexer *clexInit(void);
 void       clexReset(clexLexer *lexer, const char *content);
-bool       clexRegisterKind(clexLexer *lexer, const char *regex, int kind);
-clexToken  clex(clexLexer *lexer);
+clexStatus clexRegisterKind(clexLexer *lexer, const char *regex, int kind);
+clexStatus clex(clexLexer *lexer, clexToken *out_token);
+const clexError *clexGetLastError(const clexLexer *lexer);
+void       clexTokenInit(clexToken *token);
+void       clexTokenClear(clexToken *token);
 void       clexDeleteKinds(clexLexer *lexer);
 void       clexLexerDestroy(clexLexer *lexer);
 ```
@@ -39,13 +54,13 @@ void       clexLexerDestroy(clexLexer *lexer);
 Common flow:
 
 1. `clexInit()` to allocate a lexer.
-2. Call `clexRegisterKind()` for each token. It returns `false` when passed a
-   `NULL` lexer/regex, when the regex fails to compile, or when the rule table is
-   full – check this to catch setup issues early.
+2. Call `clexRegisterKind()` for each token and check for `CLEX_STATUS_OK`.
 3. `clexReset()` with the source buffer (you own the lifetime of the string).
-4. Repeatedly call `clex()` until it returns EOF. Handle
-   `CLEX_TOKEN_ERROR` as a lexical failure. Each token owns its `lexeme`
-   buffer; free it when no longer needed.
+4. Repeatedly call `clex()`. It returns `CLEX_STATUS_OK` for a token,
+   `CLEX_STATUS_EOF` at end-of-input, or an error status.
+   When lexical analysis fails, inspect `clexGetLastError()` for position,
+   offending lexeme, and expected token kinds.
+   Each token owns its `lexeme` buffer; release it with `clexTokenClear()`.
 5. Tear down with `clexDeleteKinds()` for reuse, or `clexLexerDestroy()` to free
    everything.
 
@@ -110,116 +125,47 @@ make test-regex  # Regex construction & matching tests
 ```c
 #include "clex.h"
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 typedef enum TokenKind {
-  INT,
-  OPARAN,
-  CPARAN,
-  OSQUAREBRACE,
-  CSQUAREBRACE,
-  OCURLYBRACE,
-  CCURLYBRACE,
-  COMMA,
-  CHAR,
-  STAR,
-  RETURN,
-  SEMICOL,
-  CONSTANT,
-  IDENTIFIER,
+  TOK_INT,
+  TOK_IDENT,
+  TOK_SEMICOL
 } TokenKind;
 
 int main() {
   clexLexer *lexer = clexInit();
+  assert(lexer != NULL);
 
-  clexRegisterKind(lexer, "int", INT);
-  clexRegisterKind(lexer, "\\(", OPARAN);
-  clexRegisterKind(lexer, "\\)", CPARAN);
-  clexRegisterKind(lexer, "\\[|<:", OSQUAREBRACE);
-  clexRegisterKind(lexer, "\\]|:>", CSQUAREBRACE);
-  clexRegisterKind(lexer, "{|<%", OCURLYBRACE);
-  clexRegisterKind(lexer, "}|%>", CCURLYBRACE);
-  clexRegisterKind(lexer, ",", COMMA);
-  clexRegisterKind(lexer, "char", CHAR);
-  clexRegisterKind(lexer, "\\*", STAR);
-  clexRegisterKind(lexer, "return", RETURN);
-  clexRegisterKind(lexer, "[1-9][0-9]*([uU])?([lL])?([lL])?", CONSTANT);
-  clexRegisterKind(lexer, ";", SEMICOL);
-  clexRegisterKind(lexer, "[a-zA-Z_]([a-zA-Z_]|[0-9])*", IDENTIFIER);
+  assert(clexRegisterKind(lexer, "int", TOK_INT) == CLEX_STATUS_OK);
+  assert(clexRegisterKind(lexer, "[a-zA-Z_]([a-zA-Z_]|[0-9])*", TOK_IDENT) ==
+         CLEX_STATUS_OK);
+  assert(clexRegisterKind(lexer, ";", TOK_SEMICOL) == CLEX_STATUS_OK);
 
-  clexReset(lexer, "int main(int argc, char *argv[]) {\nreturn 23;\n}");
+  clexReset(lexer, "int answer;");
 
-  clexToken token = clex(lexer);
-  assert(token.kind == INT);
-  assert(strcmp(token.lexeme, "int") == 0);
+  clexToken token;
+  clexTokenInit(&token);
 
-  token = clex(lexer);
-  assert(token.kind == IDENTIFIER);
-  assert(strcmp(token.lexeme, "main") == 0);
+  while (1) {
+    clexStatus status = clex(lexer, &token);
+    if (status == CLEX_STATUS_EOF) {
+      break;
+    }
+    if (status != CLEX_STATUS_OK) {
+      const clexError *error = clexGetLastError(lexer);
+      fprintf(stderr, "lex error at %zu:%zu near '%s'\n", error->position.line,
+              error->position.column,
+              error->offending_lexeme ? error->offending_lexeme : "");
+      break;
+    }
+    printf("kind=%d lexeme=%s @ %zu:%zu\n", token.kind, token.lexeme,
+           token.span.start.line, token.span.start.column);
+  }
 
-  token = clex(lexer);
-  assert(token.kind == OPARAN);
-  assert(strcmp(token.lexeme, "(") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == INT);
-  assert(strcmp(token.lexeme, "int") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == IDENTIFIER);
-  assert(strcmp(token.lexeme, "argc") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == COMMA);
-  assert(strcmp(token.lexeme, ",") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == CHAR);
-  assert(strcmp(token.lexeme, "char") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == STAR);
-  assert(strcmp(token.lexeme, "*") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == IDENTIFIER);
-  assert(strcmp(token.lexeme, "argv") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == OSQUAREBRACE);
-  assert(strcmp(token.lexeme, "[") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == CSQUAREBRACE);
-  assert(strcmp(token.lexeme, "]") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == CPARAN);
-  assert(strcmp(token.lexeme, ")") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == OCURLYBRACE);
-  assert(strcmp(token.lexeme, "{") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == RETURN);
-  assert(strcmp(token.lexeme, "return") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == CONSTANT);
-  assert(strcmp(token.lexeme, "23") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == SEMICOL);
-  assert(strcmp(token.lexeme, ";") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == CCURLYBRACE);
-  assert(strcmp(token.lexeme, "}") == 0);
-
-  token = clex(lexer);
-  assert(token.kind == CLEX_TOKEN_EOF);
-  assert(token.lexeme == NULL);
+  clexTokenClear(&token);
+  clexLexerDestroy(lexer);
 }
 ```
 

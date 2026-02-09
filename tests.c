@@ -98,16 +98,18 @@ typedef enum TokenKind {
 
 int main(void) {
   clexLexer* lexer = clexInit();
+  clexToken token;
+  clexTokenInit(&token);
 
-  assert(clexRegisterKind(NULL, "auto", AUTO) == false);
-  assert(clexRegisterKind(lexer, NULL, AUTO) == false);
-  assert(clexRegisterKind(lexer, "[", AUTO) == false);
-  assert(clexRegisterKind(lexer, "\\", AUTO) == false);
-  assert(clexRegisterKind(lexer, "(", AUTO) == false);
-  assert(clexRegisterKind(lexer, "a(", AUTO) == false);
-  assert(clexRegisterKind(lexer, "a|", AUTO) == false);
-  assert(clexRegisterKind(lexer, "|", AUTO) == false);
-  assert(clexRegisterKind(lexer, "a)", AUTO) == false);
+  assert(clexRegisterKind(NULL, "auto", AUTO) == CLEX_STATUS_INVALID_ARGUMENT);
+  assert(clexRegisterKind(lexer, NULL, AUTO) == CLEX_STATUS_INVALID_ARGUMENT);
+  assert(clexRegisterKind(lexer, "[", AUTO) == CLEX_STATUS_REGEX_ERROR);
+  assert(clexRegisterKind(lexer, "\\", AUTO) == CLEX_STATUS_REGEX_ERROR);
+  assert(clexRegisterKind(lexer, "(", AUTO) == CLEX_STATUS_REGEX_ERROR);
+  assert(clexRegisterKind(lexer, "a(", AUTO) == CLEX_STATUS_REGEX_ERROR);
+  assert(clexRegisterKind(lexer, "a|", AUTO) == CLEX_STATUS_REGEX_ERROR);
+  assert(clexRegisterKind(lexer, "|", AUTO) == CLEX_STATUS_REGEX_ERROR);
+  assert(clexRegisterKind(lexer, "a)", AUTO) == CLEX_STATUS_REGEX_ERROR);
 
   clexRegisterKind(lexer, "auto", AUTO);
   clexRegisterKind(lexer, "_Bool", BOOL);
@@ -116,40 +118,56 @@ int main(void) {
   clexRegisterKind(lexer, ";", SEMICOL);
 
   clexReset(lexer, NULL);
-  clexToken token = clex(lexer);
-  assert(token.kind == CLEX_TOKEN_EOF);
-  assert(token.lexeme == NULL);
+  assert(clex(lexer, &token) == CLEX_STATUS_EOF);
 
   clexReset(lexer, "auto ident1; break;");
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == AUTO);
   assert(strcmp(token.lexeme, "auto") == 0);
+  assert(token.span.start.offset == 0);
+  assert(token.span.start.line == 1);
+  assert(token.span.start.column == 1);
+  assert(token.span.end.offset == 4);
+  assert(token.span.end.line == 1);
+  assert(token.span.end.column == 5);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == IDENTIFIER);
   assert(strcmp(token.lexeme, "ident1") == 0);
+  assert(token.span.start.offset == 5);
+  assert(token.span.start.line == 1);
+  assert(token.span.start.column == 6);
+  assert(token.span.end.offset == 11);
+  assert(token.span.end.line == 1);
+  assert(token.span.end.column == 12);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == SEMICOL);
   assert(strcmp(token.lexeme, ";") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == BREAK);
   assert(strcmp(token.lexeme, "break") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == SEMICOL);
   assert(strcmp(token.lexeme, ";") == 0);
 
   clexReset(lexer, "auto$ ident1");
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == AUTO);
   assert(strcmp(token.lexeme, "auto") == 0);
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_LEXICAL_ERROR);
   assert(token.kind == CLEX_TOKEN_ERROR);
-  assert(strcmp(token.lexeme, "$") == 0);
-  free(token.lexeme);
+  const clexError* lex_error = clexGetLastError(lexer);
+  assert(lex_error != NULL);
+  assert(lex_error->status == CLEX_STATUS_LEXICAL_ERROR);
+  assert(strcmp(lex_error->offending_lexeme, "$") == 0);
+  assert(lex_error->position.offset == 4);
+  assert(lex_error->position.line == 1);
+  assert(lex_error->position.column == 5);
+  assert(lex_error->expected_kind_count > 0);
 
   clexDeleteKinds(lexer);
 
@@ -270,76 +288,85 @@ int main(void) {
 
   clexReset(lexer, "int main(int argc, char *argv[]) {\nreturn 23;\n}");
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == INT);
   assert(strcmp(token.lexeme, "int") == 0);
+  assert(token.span.start.line == 1);
+  assert(token.span.start.column == 1);
+  assert(token.span.end.line == 1);
+  assert(token.span.end.column == 4);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == IDENTIFIER);
   assert(strcmp(token.lexeme, "main") == 0);
+  assert(token.span.start.line == 1);
+  assert(token.span.start.column == 5);
+  assert(token.span.end.column == 9);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == OPARAN);
   assert(strcmp(token.lexeme, "(") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == INT);
   assert(strcmp(token.lexeme, "int") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == IDENTIFIER);
   assert(strcmp(token.lexeme, "argc") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == COMMA);
   assert(strcmp(token.lexeme, ",") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == CHAR);
   assert(strcmp(token.lexeme, "char") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == STAR);
   assert(strcmp(token.lexeme, "*") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == IDENTIFIER);
   assert(strcmp(token.lexeme, "argv") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == OSQUAREBRACE);
   assert(strcmp(token.lexeme, "[") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == CSQUAREBRACE);
   assert(strcmp(token.lexeme, "]") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == CPARAN);
   assert(strcmp(token.lexeme, ")") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == OCURLYBRACE);
   assert(strcmp(token.lexeme, "{") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == RETURN);
   assert(strcmp(token.lexeme, "return") == 0);
+  assert(token.span.start.line == 2);
+  assert(token.span.start.column == 1);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == CONSTANT);
   assert(strcmp(token.lexeme, "23") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == SEMICOL);
   assert(strcmp(token.lexeme, ";") == 0);
 
-  token = clex(lexer);
+  assert(clex(lexer, &token) == CLEX_STATUS_OK);
   assert(token.kind == CCURLYBRACE);
   assert(strcmp(token.lexeme, "}") == 0);
 
-  token = clex(lexer);
-  assert(token.kind == CLEX_TOKEN_EOF);
+  assert(clex(lexer, &token) == CLEX_STATUS_EOF);
+  clexTokenClear(&token);
   assert(token.lexeme == NULL);
 }
 #endif
