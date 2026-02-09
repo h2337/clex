@@ -9,30 +9,29 @@ typedef struct clexNode clexNode;
 typedef struct clexTransition {
   char fromValue;
   char toValue;
-  clexNode *to;
+  clexNode* to;
 } clexTransition;
 
 typedef struct clexNode {
   bool isStart;
   bool isFinish;
-  clexTransition **transitions;
+  clexTransition** transitions;
 } clexNode;
 
 typedef struct clexReLexerState {
-  const char *lexerContent;
+  const char* lexerContent;
   size_t lexerPosition;
-  clexNode *lastBeforeParanEntry;
-  clexNode *beforeParanEntry;
-  clexNode *paranEntry;
+  clexNode* lastBeforeParanEntry;
+  clexNode* beforeParanEntry;
+  clexNode* paranEntry;
   bool inPipe;
   bool pipeSeen;
   bool inBackslash;
-  clexNode **getFinishNodeSeen;
 } clexReLexerState;
 
-clexNode *clexNfaFromRe(const char *re, clexReLexerState *state);
-bool clexNfaTest(clexNode *nfa, const char *target);
-void clexNfaDraw(clexNode *nfa);
-void clexNfaDestroy(clexNode *nfa, clexNode **seen);
+clexNode* clexNfaFromRe(const char* re, clexReLexerState* state);
+bool clexNfaTest(clexNode* nfa, const char* target);
+void clexNfaDraw(clexNode* nfa);
+void clexNfaDestroy(clexNode* nfa, clexNode** seen);
 
 #endif

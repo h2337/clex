@@ -1,6 +1,7 @@
 #ifdef TEST_CLEX
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "clex.h"
@@ -95,12 +96,18 @@ typedef enum TokenKind {
   IDENTIFIER,
 } TokenKind;
 
-int main(int argc, char *argv[]) {
-  clexLexer *lexer = clexInit();
+int main(void) {
+  clexLexer* lexer = clexInit();
 
   assert(clexRegisterKind(NULL, "auto", AUTO) == false);
   assert(clexRegisterKind(lexer, NULL, AUTO) == false);
   assert(clexRegisterKind(lexer, "[", AUTO) == false);
+  assert(clexRegisterKind(lexer, "\\", AUTO) == false);
+  assert(clexRegisterKind(lexer, "(", AUTO) == false);
+  assert(clexRegisterKind(lexer, "a(", AUTO) == false);
+  assert(clexRegisterKind(lexer, "a|", AUTO) == false);
+  assert(clexRegisterKind(lexer, "|", AUTO) == false);
+  assert(clexRegisterKind(lexer, "a)", AUTO) == false);
 
   clexRegisterKind(lexer, "auto", AUTO);
   clexRegisterKind(lexer, "_Bool", BOOL);
@@ -110,7 +117,7 @@ int main(int argc, char *argv[]) {
 
   clexReset(lexer, NULL);
   clexToken token = clex(lexer);
-  assert(token.kind == -1);
+  assert(token.kind == CLEX_TOKEN_EOF);
   assert(token.lexeme == NULL);
 
   clexReset(lexer, "auto ident1; break;");
@@ -134,6 +141,15 @@ int main(int argc, char *argv[]) {
   token = clex(lexer);
   assert(token.kind == SEMICOL);
   assert(strcmp(token.lexeme, ";") == 0);
+
+  clexReset(lexer, "auto$ ident1");
+  token = clex(lexer);
+  assert(token.kind == AUTO);
+  assert(strcmp(token.lexeme, "auto") == 0);
+  token = clex(lexer);
+  assert(token.kind == CLEX_TOKEN_ERROR);
+  assert(strcmp(token.lexeme, "$") == 0);
+  free(token.lexeme);
 
   clexDeleteKinds(lexer);
 
@@ -323,7 +339,7 @@ int main(int argc, char *argv[]) {
   assert(strcmp(token.lexeme, "}") == 0);
 
   token = clex(lexer);
-  assert(token.kind == -1);
+  assert(token.kind == CLEX_TOKEN_EOF);
   assert(token.lexeme == NULL);
 }
 #endif
@@ -331,11 +347,13 @@ int main(int argc, char *argv[]) {
 #ifdef TEST_REGEX
 
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "fa.h"
 
-int main(int argc, char *argv[]) {
-  clexNode *nfa = clexNfaFromRe("a", NULL);
+int main(void) {
+  clexNode* nfa = clexNfaFromRe("a", NULL);
   assert(clexNfaTest(nfa, "a") == true);
   assert(clexNfaTest(nfa, "b") == false);
 
@@ -514,6 +532,37 @@ int main(int argc, char *argv[]) {
 
   nfa = clexNfaFromRe("[", NULL);
   assert(nfa == 0);
+  nfa = clexNfaFromRe("\\", NULL);
+  assert(nfa == 0);
+  nfa = clexNfaFromRe("(", NULL);
+  assert(nfa == 0);
+  nfa = clexNfaFromRe("a(", NULL);
+  assert(nfa == 0);
+  nfa = clexNfaFromRe("a|", NULL);
+  assert(nfa == 0);
+  nfa = clexNfaFromRe("|", NULL);
+  assert(nfa == 0);
+  nfa = clexNfaFromRe("a)", NULL);
+  assert(nfa == 0);
+
+  char longClassRe[160];
+  longClassRe[0] = '[';
+  memset(longClassRe + 1, 'a', 150);
+  longClassRe[151] = ']';
+  longClassRe[152] = '\0';
+  nfa = clexNfaFromRe(longClassRe, NULL);
+  assert(nfa == 0);
+
+  size_t longLen = 1100;
+  const char* suffix = "(bc)*";
+  char* longRegex = malloc(longLen + strlen(suffix) + 1);
+  assert(longRegex != NULL);
+  memset(longRegex, 'a', longLen);
+  memcpy(longRegex + longLen, suffix, strlen(suffix) + 1);
+  nfa = clexNfaFromRe(longRegex, NULL);
+  assert(nfa != NULL);
+  clexNfaDestroy(nfa, NULL);
+  free(longRegex);
 }
 #endif
 
@@ -521,8 +570,8 @@ int main(int argc, char *argv[]) {
 
 #include "fa.h"
 
-int main(int argc, char *argv[]) {
-  clexNode *nfa = clexNfaFromRe("[a-zA-Z_]([a-zA-Z_]|[0-9])*", NULL);
+int main(void) {
+  clexNode* nfa = clexNfaFromRe("[a-zA-Z_]([a-zA-Z_]|[0-9])*", NULL);
   clexNfaDraw(nfa);
 
   nfa = clexNfaFromRe("[A-Z]a(bc|de)*f", NULL);

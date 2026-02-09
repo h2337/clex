@@ -18,8 +18,9 @@ Some highlights:
 * Regex syntax supports grouping, alternation, character classes, ranges, and
   the usual `* + ?` operators.
 * Whitespace between tokens is skipped automatically.
-* Safe failure modes – invalid rules return `false`, and the lexer yields
-  `{.kind = -1, .lexeme = NULL}` on EOF or when no rule matches.
+* Safe failure modes – invalid rules return `false`, EOF yields
+  `{.kind = CLEX_TOKEN_EOF, .lexeme = NULL}`, and lexical failures yield
+  `{.kind = CLEX_TOKEN_ERROR, .lexeme = <unmatched text>}`.
 
 The maximum number of rules is 1024 by default (see `CLEX_MAX_RULES` in
 `clex.h`).
@@ -42,8 +43,9 @@ Common flow:
    `NULL` lexer/regex, when the regex fails to compile, or when the rule table is
    full – check this to catch setup issues early.
 3. `clexReset()` with the source buffer (you own the lifetime of the string).
-4. Repeatedly call `clex()` until it returns the EOF sentinel above. Each token
-   owns its `lexeme` buffer; free it when no longer needed.
+4. Repeatedly call `clex()` until it returns EOF. Handle
+   `CLEX_TOKEN_ERROR` as a lexical failure. Each token owns its `lexeme`
+   buffer; free it when no longer needed.
 5. Tear down with `clexDeleteKinds()` for reuse, or `clexLexerDestroy()` to free
    everything.
 
@@ -216,7 +218,7 @@ int main() {
   assert(strcmp(token.lexeme, "}") == 0);
 
   token = clex(lexer);
-  assert(token.kind == -1);
+  assert(token.kind == CLEX_TOKEN_EOF);
   assert(token.lexeme == NULL);
 }
 ```

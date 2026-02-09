@@ -6,29 +6,31 @@
 #include "fa.h"
 
 #define CLEX_MAX_RULES 1024
+#define CLEX_TOKEN_EOF (-1)
+#define CLEX_TOKEN_ERROR (-2)
 
 typedef struct clexRule {
-  const char *re;
-  clexNode *nfa;
+  const char* re;
+  clexNode* nfa;
   int kind;
 } clexRule;
 
 typedef struct clexToken {
   int kind;
-  char *lexeme;
+  char* lexeme;
 } clexToken;
 
 typedef struct clexLexer {
-  clexRule **rules;
-  const char *content;
+  clexRule** rules;
+  const char* content;
   size_t position;
 } clexLexer;
 
-clexLexer *clexInit(void);
-void clexLexerDestroy(clexLexer *lexer);
-void clexReset(clexLexer *lexer, const char *content);
-bool clexRegisterKind(clexLexer *lexer, const char *re, int kind);
-void clexDeleteKinds(clexLexer *lexer);
-clexToken clex(clexLexer *lexer);
+clexLexer* clexInit(void);
+void clexLexerDestroy(clexLexer* lexer);
+void clexReset(clexLexer* lexer, const char* content);
+bool clexRegisterKind(clexLexer* lexer, const char* re, int kind);
+void clexDeleteKinds(clexLexer* lexer);
+clexToken clex(clexLexer* lexer);
 
 #endif
