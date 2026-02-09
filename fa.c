@@ -13,6 +13,7 @@ static clexNode* makeNode(bool isStart, bool isFinish) {
   result->isStart = isStart;
   result->isFinish = isFinish;
   result->transitions = calloc(100, sizeof(clexTransition*));
+  result->compiled = NULL;
   if (!result->transitions) {
     free(result);
     return NULL;
@@ -147,6 +148,17 @@ static bool nodeVecContains(const NodeVec* vec, const clexNode* node) {
   return false;
 }
 
+static bool nodeVecIndexOf(const NodeVec* vec, const clexNode* node,
+                           size_t* outIndex) {
+  if (!vec || !outIndex) return false;
+  for (size_t i = 0; i < vec->size; i++)
+    if (vec->items[i] == node) {
+      *outIndex = i;
+      return true;
+    }
+  return false;
+}
+
 static bool nodeVecPush(NodeVec* vec, clexNode* node) {
   if (!vec) return false;
   if (vec->size == vec->capacity) {
@@ -158,6 +170,190 @@ static bool nodeVecPush(NodeVec* vec, clexNode* node) {
   }
   vec->items[vec->size++] = node;
   return true;
+}
+
+typedef struct clexCompiledTransition {
+  char fromValue;
+  char toValue;
+  size_t toIndex;
+} clexCompiledTransition;
+
+typedef struct clexCompiledNode {
+  bool isFinish;
+  clexCompiledTransition transitions[100];
+  size_t transitionCount;
+} clexCompiledNode;
+
+struct clexCompiledNfa {
+  clexCompiledNode* nodes;
+  size_t nodeCount;
+  unsigned char* activeStates;
+  unsigned char* seedStates;
+  unsigned char* nextSeedStates;
+  size_t* stack;
+};
+
+static void compiledNfaFree(clexCompiledNfa* compiled) {
+  if (!compiled) return;
+  free(compiled->nodes);
+  free(compiled->activeStates);
+  free(compiled->seedStates);
+  free(compiled->nextSeedStates);
+  free(compiled->stack);
+  compiled->nodes = NULL;
+  compiled->activeStates = NULL;
+  compiled->seedStates = NULL;
+  compiled->nextSeedStates = NULL;
+  compiled->stack = NULL;
+  compiled->nodeCount = 0;
+}
+
+static bool collectReachableNodes(clexNode* start, NodeVec* nodes) {
+  if (!start || !nodes) return false;
+  if (!nodeVecPush(nodes, start)) return false;
+
+  for (size_t i = 0; i < nodes->size; i++) {
+    clexNode* node = nodes->items[i];
+    for (int j = 0; j < 100; j++) {
+      if (!node->transitions[j] || !node->transitions[j]->to) continue;
+      if (nodeVecContains(nodes, node->transitions[j]->to)) continue;
+      if (!nodeVecPush(nodes, node->transitions[j]->to)) return false;
+    }
+  }
+  return true;
+}
+
+static bool buildCompiledNfa(clexNode* start, clexCompiledNfa* outCompiled) {
+  if (!start || !outCompiled) return false;
+
+  NodeVec nodes = {0};
+  if (!collectReachableNodes(start, &nodes)) {
+    nodeVecFree(&nodes);
+    return false;
+  }
+
+  clexCompiledNode* compiledNodes =
+      calloc(nodes.size, sizeof(clexCompiledNode));
+  if (!compiledNodes) {
+    nodeVecFree(&nodes);
+    return false;
+  }
+
+  for (size_t i = 0; i < nodes.size; i++) {
+    clexNode* node = nodes.items[i];
+    compiledNodes[i].isFinish = node->isFinish;
+
+    for (int j = 0; j < 100; j++) {
+      if (!node->transitions[j]) continue;
+      size_t toIndex = 0;
+      if (!nodeVecIndexOf(&nodes, node->transitions[j]->to, &toIndex)) {
+        free(compiledNodes);
+        nodeVecFree(&nodes);
+        return false;
+      }
+
+      size_t transitionIndex = compiledNodes[i].transitionCount++;
+      compiledNodes[i].transitions[transitionIndex].fromValue =
+          node->transitions[j]->fromValue;
+      compiledNodes[i].transitions[transitionIndex].toValue =
+          node->transitions[j]->toValue;
+      compiledNodes[i].transitions[transitionIndex].toIndex = toIndex;
+    }
+  }
+
+  outCompiled->nodes = compiledNodes;
+  outCompiled->nodeCount = nodes.size;
+  outCompiled->activeStates = calloc(nodes.size, sizeof(unsigned char));
+  outCompiled->seedStates = calloc(nodes.size, sizeof(unsigned char));
+  outCompiled->nextSeedStates = calloc(nodes.size, sizeof(unsigned char));
+  outCompiled->stack = calloc(nodes.size, sizeof(size_t));
+  if (!outCompiled->activeStates || !outCompiled->seedStates ||
+      !outCompiled->nextSeedStates || !outCompiled->stack) {
+    compiledNfaFree(outCompiled);
+    nodeVecFree(&nodes);
+    return false;
+  }
+  nodeVecFree(&nodes);
+  return true;
+}
+
+static bool stateSetHasAny(const unsigned char* states, size_t stateCount) {
+  for (size_t i = 0; i < stateCount; i++)
+    if (states[i]) return true;
+  return false;
+}
+
+static void epsilonClosure(const clexCompiledNfa* compiled,
+                           const unsigned char* seedStates,
+                           unsigned char* outStates, size_t* stack) {
+  size_t stackSize = 0;
+  memset(outStates, 0, compiled->nodeCount * sizeof(unsigned char));
+
+  for (size_t i = 0; i < compiled->nodeCount; i++) {
+    if (!seedStates[i]) continue;
+    outStates[i] = 1;
+    stack[stackSize++] = i;
+  }
+
+  while (stackSize > 0) {
+    size_t index = stack[--stackSize];
+    clexCompiledNode* node = &compiled->nodes[index];
+    for (size_t i = 0; i < node->transitionCount; i++) {
+      clexCompiledTransition* transition = &node->transitions[i];
+      if (transition->fromValue != '\0') continue;
+      if (outStates[transition->toIndex]) continue;
+      outStates[transition->toIndex] = 1;
+      stack[stackSize++] = transition->toIndex;
+    }
+  }
+}
+
+static bool runCompiledNfa(const clexCompiledNfa* compiled,
+                           const char* target) {
+  if (!compiled || !target || compiled->nodeCount == 0) return false;
+  if (!compiled->activeStates || !compiled->seedStates ||
+      !compiled->nextSeedStates || !compiled->stack)
+    return false;
+
+  bool matched = false;
+
+  memset(compiled->seedStates, 0, compiled->nodeCount * sizeof(unsigned char));
+  compiled->seedStates[0] = 1;
+  epsilonClosure(compiled, compiled->seedStates, compiled->activeStates,
+                 compiled->stack);
+
+  for (size_t i = 0; target[i] != '\0'; i++) {
+    char symbol = target[i];
+    memset(compiled->nextSeedStates, 0,
+           compiled->nodeCount * sizeof(unsigned char));
+
+    for (size_t j = 0; j < compiled->nodeCount; j++) {
+      if (!compiled->activeStates[j]) continue;
+      clexCompiledNode* node = &compiled->nodes[j];
+
+      for (size_t k = 0; k < node->transitionCount; k++) {
+        clexCompiledTransition* transition = &node->transitions[k];
+        if (transition->fromValue == '\0') continue;
+        if (transition->fromValue <= symbol && transition->toValue >= symbol)
+          compiled->nextSeedStates[transition->toIndex] = 1;
+      }
+    }
+
+    if (!stateSetHasAny(compiled->nextSeedStates, compiled->nodeCount))
+      return false;
+    epsilonClosure(compiled, compiled->nextSeedStates, compiled->activeStates,
+                   compiled->stack);
+    if (!stateSetHasAny(compiled->activeStates, compiled->nodeCount))
+      return false;
+  }
+
+  for (size_t i = 0; i < compiled->nodeCount; i++)
+    if (compiled->activeStates[i] && compiled->nodes[i].isFinish) {
+      matched = true;
+      break;
+    }
+
+  return matched;
 }
 
 static clexNode* getFinishNodeInternal(clexNode* node, NodeVec* seen) {
@@ -730,24 +926,19 @@ clexNode* clexNfaFromRe(const char* re, clexReLexerState* state) {
 }
 
 bool clexNfaTest(clexNode* nfa, const char* target) {
-  for (size_t i = 0; i < strlen(target); i++) {
-    for (int j = 0; j < 100; j++)
-      if (nfa->transitions[j]) {
-        if (nfa->transitions[j]->fromValue <= target[i] &&
-            nfa->transitions[j]->toValue >= target[i]) {
-          if (clexNfaTest(nfa->transitions[j]->to, target + i + 1)) return true;
-        } else if (nfa->transitions[j]->fromValue == '\0') {
-          if (clexNfaTest(nfa->transitions[j]->to, target + i)) return true;
-        }
-      }
-    return false;
+  if (!nfa || !target) return false;
+
+  if (!nfa->compiled) {
+    nfa->compiled = calloc(1, sizeof(clexCompiledNfa));
+    if (!nfa->compiled) return false;
+    if (!buildCompiledNfa(nfa, nfa->compiled)) {
+      free(nfa->compiled);
+      nfa->compiled = NULL;
+      return false;
+    }
   }
-  for (int j = 0; j < 100; j++) {
-    if (nfa->transitions[j] && nfa->transitions[j]->fromValue == '\0')
-      if (clexNfaTest(nfa->transitions[j]->to, "")) return true;
-  }
-  if (nfa->isFinish) return true;
-  return false;
+
+  return runCompiledNfa(nfa->compiled, target);
 }
 
 static char* drawKey(clexNode* node1, clexNode* node2, char fromValue,
@@ -819,6 +1010,10 @@ static void clexNfaDestroyInternal(clexNode* nfa, NodeVec* seen) {
     if (!nfa->transitions[i]) continue;
     clexNfaDestroyInternal(nfa->transitions[i]->to, seen);
     free(nfa->transitions[i]);
+  }
+  if (nfa->compiled) {
+    compiledNfaFree(nfa->compiled);
+    free(nfa->compiled);
   }
   free(nfa->transitions);
   free(nfa);

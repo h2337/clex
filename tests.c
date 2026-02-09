@@ -557,6 +557,23 @@ int main(void) {
   assert(clexNfaTest(nfa, "23u") == true);
   assert(clexNfaTest(nfa, "23UlL") == true);
 
+  size_t longInputLen = 20000;
+  char* longInput = malloc(longInputLen + 1);
+  assert(longInput != NULL);
+  memset(longInput, 'a', longInputLen);
+  longInput[longInputLen] = '\0';
+
+  nfa = clexNfaFromRe("a*", NULL);
+  assert(nfa != NULL);
+  assert(clexNfaTest(nfa, longInput) == true);
+  clexNfaDestroy(nfa, NULL);
+
+  nfa = clexNfaFromRe("(a|aa)*b", NULL);
+  assert(nfa != NULL);
+  assert(clexNfaTest(nfa, longInput) == false);
+  clexNfaDestroy(nfa, NULL);
+  free(longInput);
+
   nfa = clexNfaFromRe("[", NULL);
   assert(nfa == 0);
   nfa = clexNfaFromRe("\\", NULL);

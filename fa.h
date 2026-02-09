@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 typedef struct clexNode clexNode;
+typedef struct clexCompiledNfa clexCompiledNfa;
 
 typedef struct clexTransition {
   char fromValue;
@@ -16,6 +17,7 @@ typedef struct clexNode {
   bool isStart;
   bool isFinish;
   clexTransition** transitions;
+  clexCompiledNfa* compiled;
 } clexNode;
 
 typedef struct clexReLexerState {
